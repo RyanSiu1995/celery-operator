@@ -3,6 +3,8 @@ package celery
 import (
 	celeryprojectv4 "github.com/RyanSiu1995/celery-operator/pkg/apis/celeryproject/v4"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 func generateScheduler(cr *celeryprojectv4.Celery, brokerString string) *corev1.Pod {
@@ -21,7 +23,7 @@ func generateScheduler(cr *celeryprojectv4.Celery, brokerString string) *corev1.
 				{
 					Name:    "",
 					Image:   "",
-					Command: "celery",
+					Command: []string{"celery"},
 					Args: []string{
 						"beat",
 						"-A",
@@ -54,11 +56,11 @@ func generateBroker(cr *celeryprojectv4.Celery) (*corev1.Pod, *corev1.Service) {
 		Spec: corev1.ServiceSpec{
 			Type:     "ClusterIP",
 			Selector: labels,
-			Port: []corev1.ServicePort{
+			Ports: []corev1.ServicePort{
 				{
 					Name:       "redis-port",
 					Port:       6379,
-					TargetPort: 6379,
+					TargetPort: intstr.FromInt(6379),
 				},
 			},
 		},
