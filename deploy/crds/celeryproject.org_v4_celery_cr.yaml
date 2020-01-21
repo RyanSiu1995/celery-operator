@@ -1,0 +1,7 @@
+apiVersion: celeryproject.org/v4
+kind: Celery
+metadata:
+  name: example-celery
+spec:
+  # Add fields here
+  size: 3
