@@ -38,10 +38,6 @@ func generateScheduler(cr *celeryprojectv4.Celery, brokerString string) *corev1.
 }
 
 func generateBroker(cr *celeryprojectv4.Celery) (*corev1.Pod, *corev1.Service) {
-	if cr.Spec.Broker.Type == celeryprojectv4.ExternalBroker {
-		return nil, nil
-	}
-
 	labels := map[string]string{
 		"celery-app": cr.Name,
 		"type":       "broker",
