@@ -109,13 +109,13 @@ func (r *ReconcileCelery) Reconcile(request reconcile.Request) (reconcile.Result
 		found := &corev1.Pod{}
 		err = r.client.Get(context.TODO(), typesNamespacedName{Name: brokerPod.Name, Namespace: brokerPod.Namespace}, found)
 		if err != nil && errors.IsNotFound(err) {
-			reqLogger.Info("Creating a new Borker pod", "Pod.Namespace", brokerPod.Namespace, "Pod.Name", brokerPod.Name)
+			reqLogger.Info("Creating a new Broker pod", "Pod.Namespace", brokerPod.Namespace, "Pod.Name", brokerPod.Name)
 			err = r.client.Create(context.TODO(), brokerPod)
 			if err != nil {
 				return reconile.Result{}, err
 			}
 
-			reqLogger.Info("Creating a new Borker service", "Service.Namespace", brokerPod.Namespace, "Pod.Name", brokerPod.Name)
+			reqLogger.Info("Creating a new Broker service", "Service.Namespace", brokerPod.Namespace, "Pod.Name", brokerPod.Name)
 			err = r.client.Create(context.TODO(), brokerService)
 			if err != nil {
 				// Treat Broker as a transaction. If failed, just revert the change
@@ -126,8 +126,7 @@ func (r *ReconcileCelery) Reconcile(request reconcile.Request) (reconcile.Result
 		// TODO Check if the service has been created
 		brokerString = fmt.Sprintf("%s.%s", brokerService.Name, brokerService.Namespace)
 	}
+	reqLogger.Info("Broker information has been collected")
 
-	// Pod already exists - don't requeue
-	reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", found.Namespace, "Pod.Name", found.Name)
 	return reconcile.Result{}, nil
 }
