@@ -22,11 +22,9 @@ jobs:
       run: |-
         sudo curl -L https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl -o /usr/bin/kubectl
         sudo chmod 777 /usr/bin/kubectl
-    - name: 'Install kind and spin up local cluster'
+    - name: 'Install kind'
       run: |-
-        GO111MODULE="on" go get sigs.k8s.io/kind@v0.7.0
-        kind create cluster
-        kubectl cluster-info --context kind-kind
+        go get sigs.k8s.io/kind@v0.7.0
     - name: 'Build the image'
       run: |-
         operator-sdk build ryansiu1995/celery-operator:ci
@@ -38,4 +36,6 @@ jobs:
         DOCKERHUB_PW: '${{ secrets.DOCKERHUB_PW }}'
     - name: 'Run E2E Test'
       run: |-
+        kind create cluster
+        export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
         operator-sdk test local ./test/e2e
