@@ -2,6 +2,8 @@ package celery
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	celeryprojectv4 "github.com/RyanSiu1995/celery-operator/pkg/apis/celeryproject/v4"
 	corev1 "k8s.io/api/core/v1"
@@ -72,11 +74,6 @@ type ReconcileCelery struct {
 
 // Reconcile reads that state of the cluster for a Celery object and makes changes based on the state read
 // and what is in the Celery.Spec
-// TODO(user): Modify this Reconcile function to implement your Controller logic.  This example creates
-// a Pod as an example
-// Note:
-// The Controller will requeue the Request to be processed again if the returned error is non-nil or
-// Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileCelery) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling Celery")
@@ -95,54 +92,42 @@ func (r *ReconcileCelery) Reconcile(request reconcile.Request) (reconcile.Result
 		return reconcile.Result{}, err
 	}
 
-	// Define a new Pod object
-	pod := newPodForCR(instance)
-
 	// Set Celery instance as the owner and controller
 	if err := controllerutil.SetControllerReference(instance, pod, r.scheme); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	// Check if this Pod already exists
-	found := &corev1.Pod{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
-	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Creating a new Pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
-		err = r.client.Create(context.TODO(), pod)
-		if err != nil {
-			return reconcile.Result{}, err
+	// Define a new Pod object
+	var brokerString string
+	if instance.Spec.Broker.Type == celeryprojectv4.ExternalBroker {
+		if instance.Spec.Broker.BrokerString == nil {
+			return reconcile.Result{}, errors.New("Broker string hasn't been set")
 		}
+		brokerString = instance.Spec.Broker.BrokerString
+	} else {
+		brokerPod, brokerService := generateBroker(instance)
+		found := &corev1.Pod{}
+		err = r.client.Get(context.TODO(), typesNamespacedName{Name: brokerPod.Name, Namespace: brokerPod.Namespace}, found)
+		if err != nil && errors.IsNotFound(err) {
+			reqLogger.Info("Creating a new Borker pod", "Pod.Namespace", brokerPod.Namespace, "Pod.Name", brokerPod.Name)
+			err = r.client.Create(context.TODO(), brokerPod)
+			if err != nil {
+				return reconile.Result{}, err
+			}
 
-		// Pod created successfully - don't requeue
-		return reconcile.Result{}, nil
-	} else if err != nil {
-		return reconcile.Result{}, err
+			reqLogger.Info("Creating a new Borker service", "Service.Namespace", brokerPod.Namespace, "Pod.Name", brokerPod.Name)
+			err = r.client.Create(context.TODO(), brokerService)
+			if err != nil {
+				// Treat Broker as a transaction. If failed, just revert the change
+				r.client.Delete(context.TOD(), brokerPod)
+				return reconile.Result{}, err
+			}
+		}
+		// TODO Check if the service has been created
+		brokerString = fmt.Sprintf("%s.%s", brokerService.Name, brokerService.Namespace)
 	}
 
 	// Pod already exists - don't requeue
 	reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", found.Namespace, "Pod.Name", found.Name)
 	return reconcile.Result{}, nil
-}
-
-// newPodForCR returns a busybox pod with the same name/namespace as the cr
-func newPodForCR(cr *celeryprojectv4.Celery) *corev1.Pod {
-	labels := map[string]string{
-		"app": cr.Name,
-	}
-	return &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-pod",
-			Namespace: cr.Namespace,
-			Labels:    labels,
-		},
-		Spec: corev1.PodSpec{
-			Containers: []corev1.Container{
-				{
-					Name:    "busybox",
-					Image:   "busybox",
-					Command: []string{"sleep", "3600"},
-				},
-			},
-		},
-	}
 }
