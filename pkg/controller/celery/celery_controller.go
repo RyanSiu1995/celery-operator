@@ -2,13 +2,12 @@ package celery
 
 import (
 	"context"
-	"errors"
+	sysError "errors"
 	"fmt"
 
 	celeryprojectv4 "github.com/RyanSiu1995/celery-operator/pkg/apis/celeryproject/v4"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -92,41 +91,40 @@ func (r *ReconcileCelery) Reconcile(request reconcile.Request) (reconcile.Result
 		return reconcile.Result{}, err
 	}
 
-	// Set Celery instance as the owner and controller
-	if err := controllerutil.SetControllerReference(instance, pod, r.scheme); err != nil {
-		return reconcile.Result{}, err
-	}
-
 	// Define a new Pod object
 	var brokerString string
 	if instance.Spec.Broker.Type == celeryprojectv4.ExternalBroker {
-		if instance.Spec.Broker.BrokerString == nil {
-			return reconcile.Result{}, errors.New("Broker string hasn't been set")
+		if &instance.Spec.Broker.BrokerString == nil {
+			return reconcile.Result{}, sysError.New("Broker string hasn't been set")
 		}
 		brokerString = instance.Spec.Broker.BrokerString
 	} else {
 		brokerPod, brokerService := generateBroker(instance)
+		// Set Celery instance as the owner and controller
+		if err := controllerutil.SetControllerReference(instance, brokerPod, r.scheme); err != nil {
+			return reconcile.Result{}, err
+		}
+		if err := controllerutil.SetControllerReference(instance, brokerService, r.scheme); err != nil {
+			return reconcile.Result{}, err
+		}
 		found := &corev1.Pod{}
-		err = r.client.Get(context.TODO(), typesNamespacedName{Name: brokerPod.Name, Namespace: brokerPod.Namespace}, found)
+		err = r.client.Get(context.TODO(), types.NamespacedName{Name: brokerPod.Name, Namespace: brokerPod.Namespace}, found)
 		if err != nil && errors.IsNotFound(err) {
 			reqLogger.Info("Creating a new Broker pod", "Pod.Namespace", brokerPod.Namespace, "Pod.Name", brokerPod.Name)
-			err = r.client.Create(context.TODO(), brokerPod)
-			if err != nil {
-				return reconile.Result{}, err
+			if err := r.client.Create(context.TODO(), brokerPod); err != nil {
+				return reconcile.Result{}, err
 			}
 
 			reqLogger.Info("Creating a new Broker service", "Service.Namespace", brokerPod.Namespace, "Pod.Name", brokerPod.Name)
-			err = r.client.Create(context.TODO(), brokerService)
-			if err != nil {
-				// Treat Broker as a transaction. If failed, just revert the change
-				r.client.Delete(context.TOD(), brokerPod)
-				return reconile.Result{}, err
+			if err := r.client.Create(context.TODO(), brokerService); err != nil {
+				return reconcile.Result{}, err
 			}
 		}
 		// TODO Check if the service has been created
 		brokerString = fmt.Sprintf("%s.%s", brokerService.Name, brokerService.Namespace)
 	}
 	reqLogger.Info("Broker information has been collected")
+	reqLogger.Info("Broker string: %s", brokerString)
 
 	return reconcile.Result{}, nil
 }

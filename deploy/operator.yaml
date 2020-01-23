@@ -16,7 +16,7 @@ spec:
       containers:
         - name: celery-operator
           # Replace this with the built image name
-          image: ryansiu1995/celery-operator:latest
+          image: ryansiu1995/celery-operator:ci
           command:
           - celery-operator
           imagePullPolicy: Always

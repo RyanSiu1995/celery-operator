@@ -2,6 +2,7 @@ package celery
 
 import (
 	celeryprojectv4 "github.com/RyanSiu1995/celery-operator/pkg/apis/celeryproject/v4"
+	appv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -37,7 +38,7 @@ func generateScheduler(cr *celeryprojectv4.Celery, brokerString string) *corev1.
 	}
 }
 
-func generateBroker(cr *celeryprojectv4.Celery) (*corev1.Pod, *corev1.Service) {
+func generateBroker(cr *celeryprojectv4.Celery) (*appv1.Deployment, *corev1.Service) {
 	labels := map[string]string{
 		"celery-app": cr.Name,
 		"type":       "broker",
@@ -45,7 +46,7 @@ func generateBroker(cr *celeryprojectv4.Celery) (*corev1.Pod, *corev1.Service) {
 
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-service",
+			Name:      cr.Name + "-broker-service",
 			Namespace: cr.Namespace,
 			Labels:    labels,
 		},
@@ -62,21 +63,33 @@ func generateBroker(cr *celeryprojectv4.Celery) (*corev1.Pod, *corev1.Service) {
 		},
 	}
 
-	pod := &corev1.Pod{
+	replicaNumber := int32(1)
+	deployment := &appv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-service",
+			Name:      cr.Name + "-broker-deployment",
 			Namespace: cr.Namespace,
 			Labels:    labels,
 		},
-		Spec: corev1.PodSpec{
-			Containers: []corev1.Container{
-				{
-					Name:  "redis",
-					Image: "redis:3.0.5",
-					Ports: []corev1.ContainerPort{
+		Spec: appv1.DeploymentSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: labels,
+			},
+			Replicas: &replicaNumber,
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: labels,
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
 						{
-							Name:          "redis",
-							ContainerPort: 6379,
+							Name:  "redis",
+							Image: "redis:3.0.5",
+							Ports: []corev1.ContainerPort{
+								{
+									Name:          "redis",
+									ContainerPort: 6379,
+								},
+							},
 						},
 					},
 				},
@@ -84,5 +97,5 @@ func generateBroker(cr *celeryprojectv4.Celery) (*corev1.Pod, *corev1.Service) {
 		},
 	}
 
-	return pod, service
+	return deployment, service
 }
