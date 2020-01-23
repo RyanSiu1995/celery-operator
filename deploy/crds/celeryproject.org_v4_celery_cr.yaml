@@ -3,5 +3,10 @@ kind: Celery
 metadata:
   name: example-celery
 spec:
-  # Add fields here
-  size: 3
+  broker:
+    type: redis
+  workers:
+    desiredNumber: 1
+    targetQueues:
+    - test1
+    - test2
