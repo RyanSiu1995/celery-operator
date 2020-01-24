@@ -15,9 +15,9 @@ type CelerySpec struct {
 type CeleryBroker struct {
 	// Type defines the type of broker
 	Type BrokerType `json:"type,omitempty"`
-	// BrokerString defines the broker address for external broker type
+	// BrokerAddress defines the broker address for external broker type
 	// If it is not `external` type, this item will be ignored
-	BrokerString string `json:"brokerString,omitempty"`
+	BrokerAddress string `json:"brokerAddress,omitempty"`
 }
 
 // BrokerType defines the type of broker
@@ -48,9 +48,7 @@ const (
 
 // CeleryStatus defines the observed state of Celery
 type CeleryStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
+	BrokerAddress string `json:"brokerAddress,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

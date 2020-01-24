@@ -34,8 +34,8 @@ spec:
             broker:
               description: CeleryBroker defines the property of broker
               properties:
-                brokerString:
-                  description: BrokerString defines the broker address for external
+                brokerAddress:
+                  description: BrokerAddress defines the broker address for external
                     broker type If it is not `external` type, this item will be ignored
                   type: string
                 type:
@@ -92,6 +92,9 @@ spec:
           type: object
         status:
           description: CeleryStatus defines the observed state of Celery
+          properties:
+            brokerAddress:
+              type: string
           type: object
       type: object
   version: v4

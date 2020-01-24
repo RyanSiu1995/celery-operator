@@ -91,13 +91,13 @@ func (r *ReconcileCelery) Reconcile(request reconcile.Request) (reconcile.Result
 		return reconcile.Result{}, err
 	}
 
-	// Define a new Pod object
-	var brokerString string
+	// Define a new Broker object
+	var brokerAddress string
 	if instance.Spec.Broker.Type == celeryprojectv4.ExternalBroker {
-		if &instance.Spec.Broker.BrokerString == nil {
-			return reconcile.Result{}, sysError.New("Broker string hasn't been set")
+		if &instance.Spec.Broker.BrokerAddress == nil {
+			return reconcile.Result{}, sysError.New("Broker address hasn't been set")
 		}
-		brokerString = instance.Spec.Broker.BrokerString
+		brokerAddress = instance.Spec.Broker.BrokerAddress
 	} else {
 		brokerPod, brokerService := generateBroker(instance)
 		// Set Celery instance as the owner and controller
@@ -121,10 +121,12 @@ func (r *ReconcileCelery) Reconcile(request reconcile.Request) (reconcile.Result
 			}
 		}
 		// TODO Check if the service has been created
-		brokerString = fmt.Sprintf("%s.%s", brokerService.Name, brokerService.Namespace)
+		brokerAddress = fmt.Sprintf("%s.%s", brokerService.Name, brokerService.Namespace)
 	}
 	reqLogger.Info("Broker information has been collected")
-	reqLogger.Info("Broker string: %s", brokerString)
+
+	// Define a new Scheduler object
+	generateScheduler(instance, brokerAddress)
 
 	return reconcile.Result{}, nil
 }
