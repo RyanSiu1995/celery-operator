@@ -3,9 +3,9 @@ package celery
 import (
 	"context"
 	sysError "errors"
-	"fmt"
 
 	celeryprojectv4 "github.com/RyanSiu1995/celery-operator/pkg/apis/celeryproject/v4"
+	appv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -99,29 +99,29 @@ func (r *ReconcileCelery) Reconcile(request reconcile.Request) (reconcile.Result
 		}
 		brokerAddress = instance.Spec.Broker.BrokerAddress
 	} else {
-		brokerPod, brokerService := generateBroker(instance)
+		brokerDeployment, brokerService, address := generateBroker(instance)
 		// Set Celery instance as the owner and controller
-		if err := controllerutil.SetControllerReference(instance, brokerPod, r.scheme); err != nil {
+		if err := controllerutil.SetControllerReference(instance, brokerDeployment, r.scheme); err != nil {
 			return reconcile.Result{}, err
 		}
 		if err := controllerutil.SetControllerReference(instance, brokerService, r.scheme); err != nil {
 			return reconcile.Result{}, err
 		}
-		found := &corev1.Pod{}
-		err = r.client.Get(context.TODO(), types.NamespacedName{Name: brokerPod.Name, Namespace: brokerPod.Namespace}, found)
+		found := &appv1.Deployment{}
+		err = r.client.Get(context.TODO(), types.NamespacedName{Name: brokerDeployment.Name, Namespace: brokerDeployment.Namespace}, found)
 		if err != nil && errors.IsNotFound(err) {
-			reqLogger.Info("Creating a new Broker pod", "Pod.Namespace", brokerPod.Namespace, "Pod.Name", brokerPod.Name)
-			if err := r.client.Create(context.TODO(), brokerPod); err != nil {
+			reqLogger.Info("Creating a new Broker deployment", "Deployment.Namespace", brokerDeployment.Namespace, "Deployment.Name", brokerDeployment.Name)
+			if err := r.client.Create(context.TODO(), brokerDeployment); err != nil {
 				return reconcile.Result{}, err
 			}
 
-			reqLogger.Info("Creating a new Broker service", "Service.Namespace", brokerPod.Namespace, "Pod.Name", brokerPod.Name)
+			reqLogger.Info("Creating a new Broker service", "Service.Namespace", brokerDeployment.Namespace, "Pod.Name", brokerDeployment.Name)
 			if err := r.client.Create(context.TODO(), brokerService); err != nil {
 				return reconcile.Result{}, err
 			}
 		}
 		// TODO Check if the service has been created
-		brokerAddress = fmt.Sprintf("%s.%s", brokerService.Name, brokerService.Namespace)
+		brokerAddress = address
 	}
 	instance.Status.BrokerAddress = brokerAddress
 	err = r.client.Status().Update(context.TODO(), instance)
@@ -131,7 +131,18 @@ func (r *ReconcileCelery) Reconcile(request reconcile.Request) (reconcile.Result
 	reqLogger.Info("Broker information has been collected")
 
 	// Define a new Scheduler object
-	generateScheduler(instance, brokerAddress)
+	schedulerDeployment := generateScheduler(instance, brokerAddress)
+	if err := controllerutil.SetControllerReference(instance, schedulerDeployment, r.scheme); err != nil {
+		return reconcile.Result{}, err
+	}
+	found := &appv1.Deployment{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: schedulerDeployment.Name, Namespace: schedulerDeployment.Namespace}, found)
+	if err != nil && errors.IsNotFound(err) {
+		reqLogger.Info("Creating a new Scheduler deployment", "Deployment.Namespace", schedulerDeployment.Namespace, "Deployment.Name", schedulerDeployment.Name)
+		if err := r.client.Create(context.TODO(), schedulerDeployment); err != nil {
+			return reconcile.Result{}, err
+		}
+	}
 
 	return reconcile.Result{}, nil
 }

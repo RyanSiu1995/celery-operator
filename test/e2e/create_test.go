@@ -61,20 +61,21 @@ func TestCreateOperator(t *testing.T) {
 		},
 	}
 
-	err = f.Client.Create(goctx.TODO(), basicCelery, &framework.CleanupOptions{TestContext: ctx, Timeout: time.Second * 5, RetryInterval: time.Second * 1})
-	if err != nil {
+	if err := f.Client.Create(goctx.TODO(), basicCelery, &framework.CleanupOptions{TestContext: ctx, Timeout: time.Second * 5, RetryInterval: time.Second * 1}); err != nil {
 		t.Fatal(err)
 	}
 
-	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "basic-broker-deployment", 1, time.Second*5, time.Second*30)
-	if err != nil {
+	if err := e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "basic-broker-deployment", 1, time.Second*5, time.Second*30); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "basic-scheduler-deployment", 1, time.Second*5, time.Second*30); err != nil {
 		t.Fatal(err)
 	}
 
 	target := &celeryprojectv4.Celery{}
-	err = f.Client.Get(goctx.TODO(), types.NamespacedName{Namespace: namespace, Name: "basic"}, target)
-	if err != nil {
+	if err := f.Client.Get(goctx.TODO(), types.NamespacedName{Namespace: namespace, Name: "basic"}, target); err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(fmt.Sprintf("%s.%s", "basic-broker-service", namespace), target.Status.BrokerAddress)
+	assert.Equal(fmt.Sprintf("redis://%s.%s", "basic-broker-service", namespace), target.Status.BrokerAddress)
 }
