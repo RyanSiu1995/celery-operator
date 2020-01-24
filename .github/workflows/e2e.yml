@@ -38,4 +38,6 @@ jobs:
       run: |-
         kind create cluster
         export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
+        docker pull redis:3.0.5
+        docker pull celery:4
         operator-sdk test local ./test/e2e
