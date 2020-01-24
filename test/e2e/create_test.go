@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"fmt"
 	goctx "golang.org/x/net/context"
 	"testing"
 	"time"
@@ -8,14 +9,17 @@ import (
 	"github.com/RyanSiu1995/celery-operator/pkg/apis"
 	celeryprojectv4 "github.com/RyanSiu1995/celery-operator/pkg/apis/celeryproject/v4"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateOperator(t *testing.T) {
 	cleanupTimeout, _ := time.ParseDuration("60s")
 	cleanupRetryInterval, _ := time.ParseDuration("5s")
+	assert := assert.New(t)
 
 	celery := &celeryprojectv4.Celery{}
 	err := framework.AddToFrameworkScheme(apis.AddToScheme, celery)
@@ -66,4 +70,11 @@ func TestCreateOperator(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	target := &celeryprojectv4.Celery{}
+	err = f.Client.Get(goctx.TODO(), types.NamespacedName{Namespace: namespace, Name: "basic"}, target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(fmt.Sprintf("%s.%s", "basic-broker-service", namespace), target.Status.BrokerAddress)
 }

@@ -123,6 +123,11 @@ func (r *ReconcileCelery) Reconcile(request reconcile.Request) (reconcile.Result
 		// TODO Check if the service has been created
 		brokerAddress = fmt.Sprintf("%s.%s", brokerService.Name, brokerService.Namespace)
 	}
+	instance.Status.BrokerAddress = brokerAddress
+	err = r.client.Status().Update(context.TODO(), instance)
+	if err != nil {
+		return reconcile.Result{}, sysError.New("Cannot update broker status")
+	}
 	reqLogger.Info("Broker information has been collected")
 
 	// Define a new Scheduler object

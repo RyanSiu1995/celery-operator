@@ -10,6 +10,11 @@ spec:
     plural: celeries
     singular: celery
   scope: Namespaced
+  additionalPrinterColumns:
+  - name: BrokerAddress
+    type: string
+    description: The broker address for this celery
+    jsonPath: .status.brokerAddress
   subresources:
     status: {}
   validation:
