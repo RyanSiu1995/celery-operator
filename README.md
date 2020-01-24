@@ -15,7 +15,7 @@ Here is the tracker for the **MVP** of this operators. After MVP, alpha version 
 
 - [ ] Deployment Spawning
     - [X] Redis Deployment Broker
-    - [ ] Scheduler Deployment
+    - [X] Scheduler Deployment
     - [ ] Worker
 - [ ] E2E Test
     - [ ] Basic Celery Object Creation
