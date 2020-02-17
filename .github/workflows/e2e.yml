@@ -34,10 +34,12 @@ jobs:
         docker push ryansiu1995/celery-operator:ci
       env:
         DOCKERHUB_PW: '${{ secrets.DOCKERHUB_PW }}'
+    - name: 'Precache the docker image'
+      run: |-
+        docker pull redis:3.0.5
+        docker pull celery:4
     - name: 'Run E2E Test'
       run: |-
         kind create cluster
         export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
-        docker pull redis:3.0.5
-        docker pull celery:4
         operator-sdk test local ./test/e2e
