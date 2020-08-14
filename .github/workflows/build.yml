@@ -1,11 +1,9 @@
-name: 'E2E Test'
-env:
-  SDK_VERSION: 'v0.13.0'
+name: 'Build'
 on:
 - push
 jobs:
-  e2e:
-    name: 'E2E Test'
+  build:
+    name: 'Building the binary'
     runs-on: 'ubuntu-latest'
     steps:
     - name: 'Checkout'
@@ -13,6 +11,6 @@ jobs:
     - name: 'Setup Golang version'
       uses: 'actions/setup-go@v1'
       with:
-        go-version: '1.13.5'
-    - name: 'Build the image'
+        go-version: '1.14.7'
+    - name: 'Build the binary and lint code'
       run: 'make'
