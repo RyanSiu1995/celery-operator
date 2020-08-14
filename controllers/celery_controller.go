@@ -65,7 +65,6 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	//
 	// Define Broker object
 	//
-	var brokerAddress string
 	brokerDeployment, brokerService, err := instance.GetBroker()
 	if err != nil {
 		return ctrl.Result{}, err
@@ -102,22 +101,6 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	err = r.Client.Status().Update(context.TODO(), instance)
 	if err != nil {
 		return ctrl.Result{}, sysError.New("Cannot update broker status")
-	}
-
-	//
-	// Define a new Scheduler object
-	//
-	schedulerDeployment := generateScheduler(instance, brokerAddress)
-	if err := controllerutil.SetControllerReference(instance, schedulerDeployment, r.Scheme); err != nil {
-		return ctrl.Result{}, err
-	}
-	found := &appv1.Deployment{}
-	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: schedulerDeployment.Name, Namespace: schedulerDeployment.Namespace}, found)
-	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Creating a new Scheduler deployment", "Deployment.Namespace", schedulerDeployment.Namespace, "Deployment.Name", schedulerDeployment.Name)
-		if err := r.Client.Create(context.TODO(), schedulerDeployment); err != nil {
-			return ctrl.Result{}, err
-		}
 	}
 
 	return ctrl.Result{}, nil
