@@ -3,7 +3,7 @@ layout: go.kubebuilder.io/v2
 projectName: celery-operator-v2
 repo: github.com/RyanSiu1995/celery-operator
 resources:
-- group: cache
+- group: celery
   kind: Celery
   version: v4
 version: 3-alpha

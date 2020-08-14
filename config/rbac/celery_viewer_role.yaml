@@ -5,7 +5,7 @@ metadata:
   name: celery-viewer-role
 rules:
 - apiGroups:
-  - cache.celeryproject.org
+  - celeryproject.org
   resources:
   - celeries
   verbs:
@@ -13,7 +13,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - cache.celeryproject.org
+  - celeryproject.org
   resources:
   - celeries/status
   verbs:

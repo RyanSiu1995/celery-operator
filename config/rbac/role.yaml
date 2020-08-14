@@ -1,11 +1,13 @@
-# permissions for end users to edit celeries.
+
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: celery-editor-role
+  creationTimestamp: null
+  name: manager-role
 rules:
 - apiGroups:
-  - cache.celeryproject.org
+  - celeryproject.org
   resources:
   - celeries
   verbs:
@@ -17,8 +19,10 @@ rules:
   - update
   - watch
 - apiGroups:
-  - cache.celeryproject.org
+  - celeryproject.org
   resources:
   - celeries/status
   verbs:
   - get
+  - patch
+  - update
