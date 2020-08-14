@@ -65,14 +65,13 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	//
 	// Define Broker object
 	//
-	var brokerAddress string
-	if instance.Spec.Broker.Type == celeryprojectv4.ExternalBroker {
-		if &instance.Spec.Broker.BrokerAddress == nil {
-			return ctrl.Result{}, sysError.New("Broker address hasn't been set")
-		}
-		brokerAddress = instance.Spec.Broker.BrokerAddress
-	} else {
-		brokerDeployment, brokerService, address := generateBroker(instance)
+	brokerDeployment, brokerService, err := instance.GetBroker()
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	// Handle the Deployment and Service Creation for the Broker
+	if brokerDeployment != nil && brokerService != nil {
 		// Set Celery instance as the owner and controller
 		if err := controllerutil.SetControllerReference(instance, brokerDeployment, r.Scheme); err != nil {
 			return ctrl.Result{}, err
@@ -89,35 +88,19 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				return ctrl.Result{}, err
 			}
 
-			reqLogger.Info("Creating a new Broker service", "Service.Namespace", brokerDeployment.Namespace, "Pod.Name", brokerDeployment.Name)
+			reqLogger.Info("Creating a new Broker service", "Service.Namespace", brokerService.Namespace, "Service.Name", brokerService.Name)
 			if err := r.Client.Create(context.TODO(), brokerService); err != nil {
 				return ctrl.Result{}, err
 			}
 		}
-		// TODO Check if the service has been created
-		brokerAddress = address
+	} else {
+		return ctrl.Result{}, sysError.New("Cannot generate the service and deployment successfully...")
 	}
-	instance.Status.BrokerAddress = brokerAddress
+
+	// Update Broker Inforamtion after setting up
 	err = r.Client.Status().Update(context.TODO(), instance)
 	if err != nil {
 		return ctrl.Result{}, sysError.New("Cannot update broker status")
-	}
-	reqLogger.Info("Broker information has been collected")
-
-	//
-	// Define a new Scheduler object
-	//
-	schedulerDeployment := generateScheduler(instance, brokerAddress)
-	if err := controllerutil.SetControllerReference(instance, schedulerDeployment, r.Scheme); err != nil {
-		return ctrl.Result{}, err
-	}
-	found := &appv1.Deployment{}
-	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: schedulerDeployment.Name, Namespace: schedulerDeployment.Namespace}, found)
-	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Creating a new Scheduler deployment", "Deployment.Namespace", schedulerDeployment.Namespace, "Deployment.Name", schedulerDeployment.Name)
-		if err := r.Client.Create(context.TODO(), schedulerDeployment); err != nil {
-			return ctrl.Result{}, err
-		}
 	}
 
 	return ctrl.Result{}, nil
