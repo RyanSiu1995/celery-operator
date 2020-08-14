@@ -1,0 +1,11 @@
+domain: celeryproject.org
+layout: go.kubebuilder.io/v2
+projectName: celery-operator-v2
+repo: github.com/RyanSiu1995/celery-operator
+resources:
+- group: cache
+  kind: Celery
+  version: v4
+version: 3-alpha
+plugins:
+  go.sdk.operatorframework.io/v2-alpha: {}
