@@ -1,0 +1,20 @@
+# permissions for end users to view celeries.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: celery-viewer-role
+rules:
+- apiGroups:
+  - cache.celeryproject.org
+  resources:
+  - celeries
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - cache.celeryproject.org
+  resources:
+  - celeries/status
+  verbs:
+  - get

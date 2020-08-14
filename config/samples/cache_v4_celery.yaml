@@ -1,0 +1,7 @@
+apiVersion: cache.celeryproject.org/v4
+kind: Celery
+metadata:
+  name: celery-sample
+spec:
+  # Add fields here
+  foo: bar
