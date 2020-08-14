@@ -1,0 +1,123 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.3.0
+  creationTimestamp: null
+  name: celeries.celeryproject.org
+spec:
+  group: celeryproject.org
+  names:
+    kind: Celery
+    listKind: CeleryList
+    plural: celeries
+    singular: celery
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: Celery is the Schema for the celeries API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: CelerySpec defines the desired state of Celery
+          properties:
+            broker:
+              description: CeleryBroker defines the property of broker
+              properties:
+                brokerAddress:
+                  description: BrokerAddress defines the broker address for external
+                    broker type If it is not `external` type, this item will be ignored
+                  type: string
+                type:
+                  description: Type defines the type of broker
+                  type: string
+              type: object
+            workers:
+              items:
+                description: CeleryWorker defines the behavior of workers
+                properties:
+                  autoscaling:
+                    description: Autoscaling defines the existence of HPA in celery
+                      worker
+                    type: boolean
+                  desiredNumber:
+                    description: DesiredNumber defines the number of worker if autoscaling
+                      is disabled
+                    type: integer
+                  max:
+                    description: Max defines the maximum of workers if autoscaling
+                      is enabled
+                    type: integer
+                  min:
+                    description: Min defines the minimum of workers if autoscaling
+                      is enabled
+                    type: integer
+                  resource:
+                    description: Resource defines the resources specification for
+                      these workers
+                    properties:
+                      limits:
+                        additionalProperties:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
+                        description: 'Limits describes the maximum amount of compute
+                          resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                        type: object
+                      requests:
+                        additionalProperties:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
+                        description: 'Requests describes the minimum amount of compute
+                          resources required. If Requests is omitted for a container,
+                          it defaults to Limits if that is explicitly specified, otherwise
+                          to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                        type: object
+                    type: object
+                  targetQueues:
+                    description: Target Queues defines the target queues these workers
+                      will handle
+                    items:
+                      type: string
+                    type: array
+                type: object
+              type: array
+          type: object
+        status:
+          description: CeleryStatus defines the observed state of Celery
+          properties:
+            brokerAddress:
+              type: string
+          type: object
+      type: object
+  version: v4
+  versions:
+  - name: v4
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

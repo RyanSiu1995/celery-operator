@@ -39,14 +39,16 @@ type CeleryReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=cache.celeryproject.org,resources=celeries,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=cache.celeryproject.org,resources=celeries/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=celeryproject.org,resources=celeries,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=celeryproject.org,resources=celeries/status,verbs=get;update;patch
 
 func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	reqLogger := r.Log.WithValues("celery", req.NamespacedName)
 
+	//
 	// Fetch the Celery instance
+	//
 	instance := &celeryprojectv4.Celery{}
 	err := r.Client.Get(context.TODO(), req.NamespacedName, instance)
 	if err != nil {
@@ -60,7 +62,9 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, err
 	}
 
-	// Define a new Broker object
+	//
+	// Define Broker object
+	//
 	var brokerAddress string
 	if instance.Spec.Broker.Type == celeryprojectv4.ExternalBroker {
 		if &instance.Spec.Broker.BrokerAddress == nil {
@@ -76,6 +80,7 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		if err := controllerutil.SetControllerReference(instance, brokerService, r.Scheme); err != nil {
 			return ctrl.Result{}, err
 		}
+
 		found := &appv1.Deployment{}
 		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: brokerDeployment.Name, Namespace: brokerDeployment.Namespace}, found)
 		if err != nil && errors.IsNotFound(err) {
@@ -99,7 +104,9 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 	reqLogger.Info("Broker information has been collected")
 
+	//
 	// Define a new Scheduler object
+	//
 	schedulerDeployment := generateScheduler(instance, brokerAddress)
 	if err := controllerutil.SetControllerReference(instance, schedulerDeployment, r.Scheme); err != nil {
 		return ctrl.Result{}, err

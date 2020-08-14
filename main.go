@@ -27,7 +27,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	cachev4 "github.com/RyanSiu1995/celery-operator/api/v4"
+	celeryprojectv4 "github.com/RyanSiu1995/celery-operator/api/v4"
 	"github.com/RyanSiu1995/celery-operator/controllers"
 	// +kubebuilder:scaffold:imports
 )
@@ -40,7 +40,7 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(cachev4.AddToScheme(scheme))
+	utilruntime.Must(celeryprojectv4.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
