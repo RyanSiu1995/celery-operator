@@ -10,6 +10,56 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
+// GetWorkers function returns the worker deployment configuration accroding to the specification
+func (cr *Celery) GetWorkers() ([]*appv1.Deployment, error) {
+	if &cr.Status.BrokerAddress == nil {
+		return nil, errors.New("no broker is available")
+	}
+	workers := make([]*appv1.Deployment, len(cr.Spec.Workers))
+	broker := cr.Status.BrokerAddress
+	for i, workerSpec := range cr.Spec.Workers {
+		labels := map[string]string{
+			"celery-app":    cr.Name,
+			"type":          "worker",
+			"worker-number": string(i),
+		}
+		replicaNumber := int32(workerSpec.DesiredNumber)
+		appName := workerSpec.AppName
+		command := []string{"celery", "worker", "-A", appName, "-b", broker}
+		deployment := &appv1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-worker-deployment-%d", cr.Name, i),
+				Namespace: cr.Namespace,
+				Labels:    labels,
+			},
+			Spec: appv1.DeploymentSpec{
+				Selector: &metav1.LabelSelector{
+					MatchLabels: labels,
+				},
+				Replicas: &replicaNumber,
+				Template: corev1.PodTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: labels,
+					},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{
+								Name:      fmt.Sprintf("worker-%d", i),
+								Image:     cr.Spec.Image,
+								Resources: workerSpec.Resources,
+								Command:   command,
+							},
+						},
+					},
+				},
+			},
+		}
+		workers = append(workers, deployment)
+	}
+	return workers, nil
+}
+
+// GetBroker returns the broker information
 func (cr *Celery) GetBroker() (*appv1.Deployment, *corev1.Service, error) {
 	if cr.Spec.Broker.Type == ExternalBroker {
 		brokerAddress := cr.Spec.Broker.BrokerAddress
@@ -18,11 +68,10 @@ func (cr *Celery) GetBroker() (*appv1.Deployment, *corev1.Service, error) {
 		}
 		cr.Status.BrokerAddress = brokerAddress
 		return nil, nil, nil
-	} else {
-		deployment, service, brokerAddress := cr.generateBroker()
-		cr.Status.BrokerAddress = brokerAddress
-		return deployment, service, nil
 	}
+	deployment, service, brokerAddress := cr.generateBroker()
+	cr.Status.BrokerAddress = brokerAddress
+	return deployment, service, nil
 }
 
 func (cr *Celery) generateBroker() (*appv1.Deployment, *corev1.Service, string) {

@@ -47,10 +47,15 @@ spec:
                   description: Type defines the type of broker
                   type: string
               type: object
+            image:
+              type: string
             workers:
               items:
                 description: CeleryWorker defines the behavior of workers
                 properties:
+                  appName:
+                    description: AppName defines the target app instance to use
+                    type: string
                   autoscaling:
                     description: Autoscaling defines the existence of HPA in celery
                       worker
@@ -67,8 +72,8 @@ spec:
                     description: Min defines the minimum of workers if autoscaling
                       is enabled
                     type: integer
-                  resource:
-                    description: Resource defines the resources specification for
+                  resources:
+                    description: Resources defines the resources specification for
                       these workers
                     properties:
                       limits:
