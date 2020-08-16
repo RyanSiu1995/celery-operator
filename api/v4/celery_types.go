@@ -26,6 +26,7 @@ import (
 type CelerySpec struct {
 	Broker  CeleryBroker   `json:"broker,omitempty"`
 	Workers []CeleryWorker `json:"workers,omitempty"`
+	Image   string         `json:"image,omitempty"`
 }
 
 // CeleryBroker defines the property of broker
@@ -59,8 +60,10 @@ type CeleryWorker struct {
 	Max int `json:"max,omitempty"`
 	// Target Queues defines the target queues these workers will handle
 	TargetQueues []string `json:"targetQueues,omitempty"`
-	// Resource defines the resources specification for these workers
-	Resource corev1.ResourceRequirements `json:"resource,omitempty"`
+	// Resources defines the resources specification for these workers
+	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+	// AppName defines the target app instance to use
+	AppName string `json:"appName,omitempty"`
 }
 
 // CeleryStatus defines the observed state of Celery

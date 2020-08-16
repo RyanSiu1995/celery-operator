@@ -63,7 +63,7 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	//
-	// Define Broker object
+	// Handle Broker object
 	//
 	brokerDeployment, brokerService, err := instance.GetBroker()
 	if err != nil {
@@ -103,6 +103,23 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, sysError.New("Cannot update broker status")
 	}
 
+	//
+	// Handle workers
+	//
+	workerDeployments, err := instance.GetWorkers()
+	for _, workerDeployment := range workerDeployments {
+		if err := controllerutil.SetControllerReference(instance, workerDeployment, r.Scheme); err != nil {
+			return ctrl.Result{}, err
+		}
+		found := &appv1.Deployment{}
+		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: workerDeployment.Name, Namespace: workerDeployment.Namespace}, found)
+		if err != nil && errors.IsNotFound(err) {
+			reqLogger.Info("Creating a new worker deployment", "Deployment.Namespace", workerDeployment.Namespace, "Deployment.Name", workerDeployment.Name)
+			if err := r.Client.Create(context.TODO(), brokerDeployment); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+	}
 	return ctrl.Result{}, nil
 }
 
