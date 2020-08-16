@@ -51,6 +51,11 @@ var _ = Describe("Celery Creation", func() {
 					Name:      "celery-test-1-broker-service",
 				}, &corev1.Service{})
 				Expect(err).NotTo(HaveOccurred())
+				err = k8sClient.Get(ctx, client.ObjectKey{
+					Namespace: "default",
+					Name:      "celery-test-1-worker-deployment-0",
+				}, &appv1.Deployment{})
+				Expect(err).NotTo(HaveOccurred())
 			})
 		})
 	})

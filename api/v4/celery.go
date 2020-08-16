@@ -15,21 +15,21 @@ func (cr *Celery) GetWorkers() ([]*appv1.Deployment, error) {
 	if &cr.Status.BrokerAddress == nil {
 		return nil, errors.New("no broker is available")
 	}
-	workers := make([]*appv1.Deployment, len(cr.Spec.Workers))
+	var workers []*appv1.Deployment
 	broker := cr.Status.BrokerAddress
 	for i, workerSpec := range cr.Spec.Workers {
 		labels := map[string]string{
 			"celery-app":    cr.Name,
 			"type":          "worker",
-			"worker-number": string(i),
+			"worker-number": fmt.Sprintf("worker-%d", i),
 		}
 		replicaNumber := int32(workerSpec.Replicas)
 		appName := workerSpec.AppName
 		command := []string{"celery", "worker", "-A", appName, "-b", broker}
 		deployment := &appv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-worker-deployment-%d", cr.Name, i),
-				Namespace: cr.Namespace,
+				Name:      fmt.Sprintf("%s-worker-deployment-%d", cr.GetName(), i),
+				Namespace: cr.GetNamespace(),
 				Labels:    labels,
 			},
 			Spec: appv1.DeploymentSpec{
@@ -82,8 +82,8 @@ func (cr *Celery) generateBroker() (*appv1.Deployment, *corev1.Service, string) 
 
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-broker-service",
-			Namespace: cr.Namespace,
+			Name:      cr.GetName() + "-broker-service",
+			Namespace: cr.GetNamespace(),
 			Labels:    labels,
 		},
 		Spec: corev1.ServiceSpec{
@@ -102,8 +102,8 @@ func (cr *Celery) generateBroker() (*appv1.Deployment, *corev1.Service, string) 
 	replicaNumber := int32(1)
 	deployment := &appv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-broker-deployment",
-			Namespace: cr.Namespace,
+			Name:      cr.GetName() + "-broker-deployment",
+			Namespace: cr.GetNamespace(),
 			Labels:    labels,
 		},
 		Spec: appv1.DeploymentSpec{
