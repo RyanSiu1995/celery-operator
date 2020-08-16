@@ -1,0 +1,12 @@
+apiVersion: celeryproject.org/v4
+kind: Celery
+metadata:
+  name: celery-test-1
+  namespace: default
+spec:
+  broker:
+    type: redis
+  image: celery:4
+  workers:
+    - replicas: 1
+      appName: test

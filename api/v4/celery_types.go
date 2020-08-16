@@ -51,7 +51,7 @@ const (
 // CeleryWorker defines the behavior of workers
 type CeleryWorker struct {
 	// DesiredNumber defines the number of worker if autoscaling is disabled
-	DesiredNumber int `json:"desiredNumber,omitempty"`
+	Replicas int `json:"replicas,omitempty"`
 	// Autoscaling defines the existence of HPA in celery worker
 	Autoscaling bool `json:"autoscaling,omitempty"`
 	// Min defines the minimum of workers if autoscaling is enabled

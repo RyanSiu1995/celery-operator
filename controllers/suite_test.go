@@ -17,13 +17,19 @@ limitations under the License.
 package controllers
 
 import (
+	"context"
+	"encoding/json"
+	"io/ioutil"
 	"path/filepath"
 	"testing"
 
+	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	appv1 "k8s.io/api/apps/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
@@ -39,7 +45,9 @@ import (
 
 var cfg *rest.Config
 var k8sClient client.Client
+var k8sManager ctrl.Manager
 var testEnv *envtest.Environment
+var ctx = context.Background()
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -65,6 +73,23 @@ var _ = BeforeSuite(func(done Done) {
 	err = celeryprojectv4.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
+	k8sManager, err = ctrl.NewManager(cfg, ctrl.Options{
+		Scheme: scheme.Scheme,
+	})
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&CeleryReconciler{
+		Client: k8sManager.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("Celery"),
+		Scheme: scheme.Scheme,
+	}).SetupWithManager(k8sManager)
+	Expect(err).NotTo(HaveOccurred())
+
+	go func() {
+		err = k8sManager.Start(ctrl.SetupSignalHandler())
+		Expect(err).ToNot(HaveOccurred())
+	}()
+
 	// +kubebuilder:scaffold:scheme
 
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
@@ -73,6 +98,37 @@ var _ = BeforeSuite(func(done Done) {
 
 	close(done)
 }, 60)
+
+var _ = Describe("Celery Creation", func() {
+	Describe("Celery Creation", func() {
+		Context("Create a broker and worker", func() {
+			It("should have a single broker and worker", func() {
+				celerySpecInYaml, err := ioutil.ReadFile("../tests/fixtures/celery.yaml")
+				Expect(err).NotTo(HaveOccurred())
+				celeryObject := &celeryprojectv4.Celery{}
+				celerySpecInJSON, err := yaml.YAMLToJSON(celerySpecInYaml)
+				Expect(err).NotTo(HaveOccurred())
+				err = json.Unmarshal(celerySpecInJSON, celeryObject)
+				Expect(err).NotTo(HaveOccurred())
+				err = k8sClient.Create(ctx, celeryObject)
+				Expect(err).NotTo(HaveOccurred())
+
+				celery := &celeryprojectv4.Celery{}
+				err = k8sClient.Get(ctx, client.ObjectKey{
+					Namespace: "default",
+					Name:      "celery-test-1",
+				}, celery)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(celery).NotTo(BeNil())
+
+				deployment := &appv1.DeploymentList{}
+				err = k8sClient.List(ctx, deployment)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(deployment).To(BeNil())
+			})
+		})
+	})
+})
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")

@@ -60,10 +60,6 @@ spec:
                     description: Autoscaling defines the existence of HPA in celery
                       worker
                     type: boolean
-                  desiredNumber:
-                    description: DesiredNumber defines the number of worker if autoscaling
-                      is disabled
-                    type: integer
                   max:
                     description: Max defines the maximum of workers if autoscaling
                       is enabled
@@ -71,6 +67,10 @@ spec:
                   min:
                     description: Min defines the minimum of workers if autoscaling
                       is enabled
+                    type: integer
+                  replicas:
+                    description: DesiredNumber defines the number of worker if autoscaling
+                      is disabled
                     type: integer
                   resources:
                     description: Resources defines the resources specification for

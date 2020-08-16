@@ -23,7 +23,7 @@ func (cr *Celery) GetWorkers() ([]*appv1.Deployment, error) {
 			"type":          "worker",
 			"worker-number": string(i),
 		}
-		replicaNumber := int32(workerSpec.DesiredNumber)
+		replicaNumber := int32(workerSpec.Replicas)
 		appName := workerSpec.AppName
 		command := []string{"celery", "worker", "-A", appName, "-b", broker}
 		deployment := &appv1.Deployment{
