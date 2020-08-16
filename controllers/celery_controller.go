@@ -107,6 +107,9 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// Handle workers
 	//
 	workerDeployments, err := instance.GetWorkers()
+	if err != nil {
+		return ctrl.Result{}, sysError.New("Cannot create the worker deployment")
+	}
 	for _, workerDeployment := range workerDeployments {
 		if err := controllerutil.SetControllerReference(instance, workerDeployment, r.Scheme); err != nil {
 			return ctrl.Result{}, err
@@ -115,7 +118,7 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: workerDeployment.Name, Namespace: workerDeployment.Namespace}, found)
 		if err != nil && errors.IsNotFound(err) {
 			reqLogger.Info("Creating a new worker deployment", "Deployment.Namespace", workerDeployment.Namespace, "Deployment.Name", workerDeployment.Name)
-			if err := r.Client.Create(context.TODO(), brokerDeployment); err != nil {
+			if err := r.Client.Create(context.TODO(), workerDeployment); err != nil {
 				return ctrl.Result{}, err
 			}
 		}
