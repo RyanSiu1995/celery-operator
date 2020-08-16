@@ -17,16 +17,11 @@ limitations under the License.
 package controllers
 
 import (
-	"context"
-	"encoding/json"
-	"io/ioutil"
 	"path/filepath"
 	"testing"
 
-	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	appv1 "k8s.io/api/apps/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -47,7 +42,6 @@ var cfg *rest.Config
 var k8sClient client.Client
 var k8sManager ctrl.Manager
 var testEnv *envtest.Environment
-var ctx = context.Background()
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -92,43 +86,11 @@ var _ = BeforeSuite(func(done Done) {
 
 	// +kubebuilder:scaffold:scheme
 
-	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
-	Expect(err).ToNot(HaveOccurred())
+	k8sClient = k8sManager.GetClient()
 	Expect(k8sClient).ToNot(BeNil())
 
 	close(done)
 }, 60)
-
-var _ = Describe("Celery Creation", func() {
-	Describe("Celery Creation", func() {
-		Context("Create a broker and worker", func() {
-			It("should have a single broker and worker", func() {
-				celerySpecInYaml, err := ioutil.ReadFile("../tests/fixtures/celery.yaml")
-				Expect(err).NotTo(HaveOccurred())
-				celeryObject := &celeryprojectv4.Celery{}
-				celerySpecInJSON, err := yaml.YAMLToJSON(celerySpecInYaml)
-				Expect(err).NotTo(HaveOccurred())
-				err = json.Unmarshal(celerySpecInJSON, celeryObject)
-				Expect(err).NotTo(HaveOccurred())
-				err = k8sClient.Create(ctx, celeryObject)
-				Expect(err).NotTo(HaveOccurred())
-
-				celery := &celeryprojectv4.Celery{}
-				err = k8sClient.Get(ctx, client.ObjectKey{
-					Namespace: "default",
-					Name:      "celery-test-1",
-				}, celery)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(celery).NotTo(BeNil())
-
-				deployment := &appv1.DeploymentList{}
-				err = k8sClient.List(ctx, deployment)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(deployment).To(BeNil())
-			})
-		})
-	})
-})
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
