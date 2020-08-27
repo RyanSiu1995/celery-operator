@@ -18,10 +18,8 @@ package controllers
 
 import (
 	"context"
-	sysError "errors"
 
 	"github.com/go-logr/logr"
-	appv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -72,7 +70,7 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		if err := controllerutil.SetControllerReference(instance, broker, r.Scheme); err != nil {
 			return ctrl.Result{}, err
 		}
-		reqLogger.Info("Creating a new Broker", "CeleryBroker.Namespace", broker.Namespace, "CeleryBroker.Name", broker.Name)
+		reqLogger.Info("Creating a new CeleryBroker", "CeleryBroker.Namespace", broker.Namespace, "CeleryBroker.Name", broker.Name)
 		if err := r.Client.Create(context.TODO(), broker); err != nil {
 			return ctrl.Result{}, err
 		}
@@ -89,7 +87,7 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			if err := controllerutil.SetControllerReference(instance, scheduler, r.Scheme); err != nil {
 				return ctrl.Result{}, err
 			}
-			reqLogger.Info("Creating a new Scheduler", "CeleryScheduler.Namespace", scheduler.Namespace, "CeleryScheduler.Name", scheduler.Name)
+			reqLogger.Info("Creating a new CeleryScheduler", "CeleryScheduler.Namespace", scheduler.Namespace, "CeleryScheduler.Name", scheduler.Name)
 			if err := r.Client.Create(context.TODO(), scheduler); err != nil {
 				return ctrl.Result{}, err
 			}
@@ -99,23 +97,21 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	//
 	// Handle workers
 	//
-	workerDeployments, err := instance.GetWorkers()
-	if err != nil {
-		return ctrl.Result{}, sysError.New("Cannot create the worker deployment")
-	}
-	for _, workerDeployment := range workerDeployments {
-		if err := controllerutil.SetControllerReference(instance, workerDeployment, r.Scheme); err != nil {
-			return ctrl.Result{}, err
-		}
-		found := &appv1.Deployment{}
-		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: workerDeployment.Name, Namespace: workerDeployment.Namespace}, found)
+	workers := instance.GenerateWorkers()
+	for _, worker := range workers {
+		found := &celeryv4.CeleryWorker{}
+		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: worker.Name, Namespace: worker.Namespace}, found)
 		if err != nil && errors.IsNotFound(err) {
-			reqLogger.Info("Creating a new worker deployment", "Deployment.Namespace", workerDeployment.Namespace, "Deployment.Name", workerDeployment.Name)
-			if err := r.Client.Create(context.TODO(), workerDeployment); err != nil {
+			if err := controllerutil.SetControllerReference(instance, worker, r.Scheme); err != nil {
+				return ctrl.Result{}, err
+			}
+			reqLogger.Info("Creating a new CeleryWorker", "CeleryWorker.Namespace", worker.Namespace, "CeleryWorker.Name", worker.Name)
+			if err := r.Client.Create(context.TODO(), worker); err != nil {
 				return ctrl.Result{}, err
 			}
 		}
 	}
+
 	return ctrl.Result{}, nil
 }
 
