@@ -60,12 +60,16 @@ func (r *CelerySchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 		return ctrl.Result{}, err
 	}
 	// Handle the object creation
-	podList := instance.Generate()
-	for idx, pod := range podList {
+	existingPodList := &corev1.PodList{}
+	err = r.Client.List(context.TODO(), existingPodList, client.MatchingLabels{
+		"celery-app": instance.Name,
+		"type":       "scheduler",
+	})
+	podList := instance.Generate(instance.Spec.Replicas - len(existingPodList.Items))
+	for _, pod := range podList {
 		found := &corev1.Pod{}
 		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
 		if err != nil && errors.IsNotFound(err) {
-			pod = instance.Replace(idx)
 			if err := controllerutil.SetControllerReference(instance, pod, r.Scheme); err != nil {
 				return ctrl.Result{}, err
 			}

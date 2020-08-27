@@ -40,7 +40,6 @@ type CelerySchedulerSpec struct {
 
 // CelerySchedulerStatus defines the observed state of CeleryScheduler
 type CelerySchedulerStatus struct {
-	PodList []*corev1.Pod `json:"podList,omitempty"`
 }
 
 // +kubebuilder:object:root=true
