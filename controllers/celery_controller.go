@@ -65,42 +65,17 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	//
 	// Handle Broker object
 	//
-	brokerDeployment, brokerService, err := instance.GetBroker()
-	if err != nil {
+	broker := instance.GenerateBroker()
+	if err := controllerutil.SetControllerReference(instance, broker, r.Scheme); err != nil {
 		return ctrl.Result{}, err
 	}
-
-	// Handle the Deployment and Service Creation for the Broker
-	if brokerDeployment != nil && brokerService != nil {
-		// Set Celery instance as the owner and controller
-		if err := controllerutil.SetControllerReference(instance, brokerDeployment, r.Scheme); err != nil {
+	found := &celeryv4.CeleryBroker{}
+	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: broker.Name, Namespace: broker.Namespace}, found)
+	if err != nil && errors.IsNotFound(err) {
+		reqLogger.Info("Creating a new Broker", "CeleryBroker.Namespace", broker.Namespace, "CeleryBroker.Name", broker.Name)
+		if err := r.Client.Create(context.TODO(), broker); err != nil {
 			return ctrl.Result{}, err
 		}
-		if err := controllerutil.SetControllerReference(instance, brokerService, r.Scheme); err != nil {
-			return ctrl.Result{}, err
-		}
-
-		found := &appv1.Deployment{}
-		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: brokerDeployment.Name, Namespace: brokerDeployment.Namespace}, found)
-		if err != nil && errors.IsNotFound(err) {
-			reqLogger.Info("Creating a new Broker deployment", "Deployment.Namespace", brokerDeployment.Namespace, "Deployment.Name", brokerDeployment.Name)
-			if err := r.Client.Create(context.TODO(), brokerDeployment); err != nil {
-				return ctrl.Result{}, err
-			}
-
-			reqLogger.Info("Creating a new Broker service", "Service.Namespace", brokerService.Namespace, "Service.Name", brokerService.Name)
-			if err := r.Client.Create(context.TODO(), brokerService); err != nil {
-				return ctrl.Result{}, err
-			}
-		}
-	} else {
-		return ctrl.Result{}, sysError.New("Cannot generate the service and deployment successfully...")
-	}
-
-	// Update Broker Inforamtion after setting up
-	err = r.Client.Status().Update(context.TODO(), instance)
-	if err != nil {
-		return ctrl.Result{}, sysError.New("Cannot update broker status")
 	}
 
 	//

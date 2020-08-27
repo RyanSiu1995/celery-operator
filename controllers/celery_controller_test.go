@@ -33,22 +33,26 @@ var _ = Describe("Celery Creation", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				time.Sleep(2 * time.Second)
-				celery := &celeryv4.Celery{}
 				err = k8sClient.Get(ctx, client.ObjectKey{
 					Namespace: "default",
 					Name:      "celery-test-1",
-				}, celery)
+				}, &celeryv4.Celery{})
 				Expect(err).NotTo(HaveOccurred())
 
 				time.Sleep(2 * time.Second)
 				err = k8sClient.Get(ctx, client.ObjectKey{
 					Namespace: "default",
-					Name:      "celery-test-1-broker-deployment",
-				}, &appv1.Deployment{})
+					Name:      "celery-test-1-broker",
+				}, &celeryv4.CeleryBroker{})
 				Expect(err).NotTo(HaveOccurred())
 				err = k8sClient.Get(ctx, client.ObjectKey{
 					Namespace: "default",
-					Name:      "celery-test-1-broker-service",
+					Name:      "celery-test-1-broker-broker",
+				}, &corev1.Pod{})
+				Expect(err).NotTo(HaveOccurred())
+				err = k8sClient.Get(ctx, client.ObjectKey{
+					Namespace: "default",
+					Name:      "celery-test-1-broker-broker-service",
 				}, &corev1.Service{})
 				Expect(err).NotTo(HaveOccurred())
 				err = k8sClient.Get(ctx, client.ObjectKey{
