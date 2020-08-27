@@ -6,7 +6,7 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.3.0
   creationTimestamp: null
-  name: celeries.celeryproject.org
+  name: celeries.celery.celeryproject.org
 spec:
   group: celery.celeryproject.org
   names:
@@ -47,18 +47,19 @@ spec:
                   description: Type defines the type of broker
                   type: string
               type: object
+            image:
+              type: string
             workers:
               items:
                 description: CeleryWorker defines the behavior of workers
                 properties:
+                  appName:
+                    description: AppName defines the target app instance to use
+                    type: string
                   autoscaling:
                     description: Autoscaling defines the existence of HPA in celery
                       worker
                     type: boolean
-                  desiredNumber:
-                    description: DesiredNumber defines the number of worker if autoscaling
-                      is disabled
-                    type: integer
                   max:
                     description: Max defines the maximum of workers if autoscaling
                       is enabled
@@ -67,8 +68,12 @@ spec:
                     description: Min defines the minimum of workers if autoscaling
                       is enabled
                     type: integer
-                  resource:
-                    description: Resource defines the resources specification for
+                  replicas:
+                    description: DesiredNumber defines the number of worker if autoscaling
+                      is disabled
+                    type: integer
+                  resources:
+                    description: Resources defines the resources specification for
                       these workers
                     properties:
                       limits:

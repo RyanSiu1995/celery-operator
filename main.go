@@ -60,7 +60,7 @@ func main() {
 		MetricsBindAddress: metricsAddr,
 		Port:               9443,
 		LeaderElection:     enableLeaderElection,
-		LeaderElectionID:   "b32e0eb5.celeryproject.org",
+		LeaderElectionID:   "b32e0eb5.celery.celeryproject.org",
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")

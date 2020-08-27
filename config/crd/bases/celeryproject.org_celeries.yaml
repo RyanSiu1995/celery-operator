@@ -6,9 +6,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.3.0
   creationTimestamp: null
-  name: celeries.celeryproject.org
+  name: celeries.celery.celeryproject.org
 spec:
-  group: celeryproject.org
+  group: celery.celeryproject.org
   names:
     kind: Celery
     listKind: CeleryList

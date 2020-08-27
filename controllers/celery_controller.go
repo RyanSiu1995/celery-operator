@@ -39,8 +39,8 @@ type CeleryReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=celeryproject.org,resources=celeries,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=celeryproject.org,resources=celeries/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=celery.celeryproject.org,resources=celeries,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=celery.celeryproject.org,resources=celeries/status,verbs=get;update;patch
 
 func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()

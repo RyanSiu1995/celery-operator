@@ -16,7 +16,7 @@ limitations under the License.
 
 // Package v4 contains API Schema definitions for the celery v4 API group
 // +kubebuilder:object:generate=true
-// +groupName=celeryproject.org
+// +groupName=celery.celeryproject.org
 package v4
 
 import (
