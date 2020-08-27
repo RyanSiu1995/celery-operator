@@ -16,7 +16,7 @@ limitations under the License.
 
 // Package v4 contains API Schema definitions for the celery v4 API group
 // +kubebuilder:object:generate=true
-// +groupName=celeryproject.org
+// +groupName=celery.celeryproject.org
 package v4
 
 import (
@@ -26,7 +26,7 @@ import (
 
 var (
 	// GroupVersion is group version used to register these objects
-	GroupVersion = schema.GroupVersion{Group: "celeryproject.org", Version: "v4"}
+	GroupVersion = schema.GroupVersion{Group: "celery.celeryproject.org", Version: "v4"}
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
 	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}

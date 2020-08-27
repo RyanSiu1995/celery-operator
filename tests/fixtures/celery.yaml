@@ -1,4 +1,4 @@
-apiVersion: celeryproject.org/v4
+apiVersion: celery.celeryproject.org/v4
 kind: Celery
 metadata:
   name: celery-test-1

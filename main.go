@@ -27,7 +27,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	celeryprojectv4 "github.com/RyanSiu1995/celery-operator/api/v4"
+	celeryv4 "github.com/RyanSiu1995/celery-operator/api/v4"
 	"github.com/RyanSiu1995/celery-operator/controllers"
 	// +kubebuilder:scaffold:imports
 )
@@ -40,7 +40,7 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(celeryprojectv4.AddToScheme(scheme))
+	utilruntime.Must(celeryv4.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -60,7 +60,7 @@ func main() {
 		MetricsBindAddress: metricsAddr,
 		Port:               9443,
 		LeaderElection:     enableLeaderElection,
-		LeaderElectionID:   "b32e0eb5.celeryproject.org",
+		LeaderElectionID:   "b32e0eb5.celery.celeryproject.org",
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
