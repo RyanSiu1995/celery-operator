@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	celeryprojectv4 "github.com/RyanSiu1995/celery-operator/api/v4"
+	celeryv4 "github.com/RyanSiu1995/celery-operator/api/v4"
 )
 
 // CeleryReconciler reconciles a Celery object
@@ -49,7 +49,7 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	//
 	// Fetch the Celery instance
 	//
-	instance := &celeryprojectv4.Celery{}
+	instance := &celeryv4.Celery{}
 	err := r.Client.Get(context.TODO(), req.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -128,6 +128,6 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 func (r *CeleryReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&celeryprojectv4.Celery{}).
+		For(&celeryv4.Celery{}).
 		Complete(r)
 }
