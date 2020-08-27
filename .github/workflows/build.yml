@@ -7,6 +7,18 @@ on:
     branches:
       - master
 jobs:
+  lint:
+    name: 'Lint Code'
+    runs-on: 'ubuntu-latest'
+    steps:
+      - name: 'Checkout'
+        uses: 'actions/checkout@v2'
+      - name: Lint Code Base
+        uses: github/super-linter@v3
+        env:
+          # Use the default linter from operator framework
+          VALIDATE_MD: true
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   test:
     name: 'Test the operator'
     runs-on: 'ubuntu-latest'
