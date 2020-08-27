@@ -16,6 +16,8 @@ jobs:
       - name: Lint Code Base
         uses: github/super-linter@v3
         env:
+          # Use the default linter from operator framework
+          VALIDATE_MD: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   test:
     name: 'Test the operator'
