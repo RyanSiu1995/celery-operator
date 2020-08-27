@@ -9,6 +9,9 @@ resources:
 - group: celery
   kind: CeleryBroker
   version: v4
+- group: celery
+  kind: CeleryScheduler
+  version: v4
 version: 3-alpha
 plugins:
   go.sdk.operatorframework.io/v2-alpha: {}

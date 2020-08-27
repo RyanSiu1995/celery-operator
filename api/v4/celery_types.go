@@ -24,9 +24,10 @@ import (
 
 // CelerySpec defines the desired state of Celery
 type CelerySpec struct {
-	Broker  CeleryBrokerSpec `json:"broker,omitempty"`
-	Workers []CeleryWorker   `json:"workers,omitempty"`
-	Image   string           `json:"image,omitempty"`
+	Broker     CeleryBrokerSpec      `json:"broker,omitempty"`
+	Workers    []CeleryWorker        `json:"workers,omitempty"`
+	Schedulers []CelerySchedulerSpec `json:"schedulers,omitempty"`
+	Image      string                `json:"image,omitempty"`
 }
 
 // CeleryWorker defines the behavior of workers

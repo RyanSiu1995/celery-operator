@@ -1,0 +1,24 @@
+# permissions for end users to edit celeryschedulers.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: celeryscheduler-editor-role
+rules:
+- apiGroups:
+  - celery.celeryproject.org
+  resources:
+  - celeryschedulers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - celery.celeryproject.org
+  resources:
+  - celeryschedulers/status
+  verbs:
+  - get

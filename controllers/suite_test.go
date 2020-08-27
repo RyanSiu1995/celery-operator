@@ -84,11 +84,20 @@ var _ = BeforeSuite(func(done Done) {
 		Scheme: scheme.Scheme,
 	}).SetupWithManager(k8sManager)
 	Expect(err).NotTo(HaveOccurred())
+	err = (&CelerySchedulerReconciler{
+		Client: k8sManager.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("CeleryScheduler"),
+		Scheme: scheme.Scheme,
+	}).SetupWithManager(k8sManager)
+	Expect(err).NotTo(HaveOccurred())
 
 	go func() {
 		err = k8sManager.Start(ctrl.SetupSignalHandler())
 		Expect(err).ToNot(HaveOccurred())
 	}()
+
+	err = celeryv4.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
 
 	err = celeryv4.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())

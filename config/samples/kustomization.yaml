@@ -2,4 +2,5 @@
 resources:
 - v4_celery.yaml
 - celery_v4_celerybroker.yaml
+- celery_v4_celeryscheduler.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples

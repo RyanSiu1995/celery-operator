@@ -50,6 +50,54 @@ spec:
               type: object
             image:
               type: string
+            schedulers:
+              items:
+                description: CelerySchedulerSpec defines the desired state of CeleryScheduler
+                properties:
+                  appName:
+                    description: AppName defines the target app instance to use
+                    type: string
+                  brokerAddress:
+                    type: string
+                  image:
+                    type: string
+                  replicas:
+                    description: DesiredNumber defines the number of worker if autoscaling
+                      is disabled
+                    type: integer
+                  resources:
+                    description: Resources defines the resources specification for
+                      these workers
+                    properties:
+                      limits:
+                        additionalProperties:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
+                        description: 'Limits describes the maximum amount of compute
+                          resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                        type: object
+                      requests:
+                        additionalProperties:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
+                        description: 'Requests describes the minimum amount of compute
+                          resources required. If Requests is omitted for a container,
+                          it defaults to Limits if that is explicitly specified, otherwise
+                          to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                        type: object
+                    type: object
+                  schedulerClass:
+                    description: SchedulerClass defines the target scheduler class
+                      to use
+                    type: string
+                type: object
+              type: array
             workers:
               items:
                 description: CeleryWorker defines the behavior of workers
