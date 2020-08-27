@@ -59,6 +59,22 @@ func (cr *Celery) GetWorkers() ([]*appv1.Deployment, error) {
 	return workers, nil
 }
 
+func (cr *Celery) GenerateBroker() *CeleryBroker {
+	labels := map[string]string{
+		"celery-app": cr.Name,
+		"type":       "broker",
+	}
+
+	return &CeleryBroker{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      cr.GetName() + "-broker",
+			Namespace: cr.GetNamespace(),
+			Labels:    labels,
+		},
+		Spec: cr.Spec.Broker,
+	}
+}
+
 // GetBroker returns the broker information
 func (cr *Celery) GetBroker() (*appv1.Deployment, *corev1.Service, error) {
 	if cr.Spec.Broker.Type == ExternalBroker {

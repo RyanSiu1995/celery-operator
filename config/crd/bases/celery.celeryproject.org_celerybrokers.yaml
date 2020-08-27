@@ -1,0 +1,65 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.3.0
+  creationTimestamp: null
+  name: celerybrokers.celery.celeryproject.org
+spec:
+  group: celery.celeryproject.org
+  names:
+    kind: CeleryBroker
+    listKind: CeleryBrokerList
+    plural: celerybrokers
+    singular: celerybroker
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: CeleryBroker is the Schema for the celerybrokers API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: CeleryBrokerSpec defines the desired state of CeleryBroker
+          properties:
+            brokerAddress:
+              description: BrokerAddress defines the broker address for external broker
+                type If it is not `external` type, this item will be ignored
+              type: string
+            type:
+              description: Foo is an example field of CeleryBroker. Edit CeleryBroker_types.go
+                to remove/update
+              type: string
+          type: object
+        status:
+          description: CeleryBrokerStatus defines the observed state of CeleryBroker
+          properties:
+            brokerAddress:
+              type: string
+          type: object
+      type: object
+  version: v4
+  versions:
+  - name: v4
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

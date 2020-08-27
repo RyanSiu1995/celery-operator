@@ -26,3 +26,23 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - celery.celeryproject.org
+  resources:
+  - celerybrokers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - celery.celeryproject.org
+  resources:
+  - celerybrokers/status
+  verbs:
+  - get
+  - patch
+  - update

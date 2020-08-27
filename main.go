@@ -75,6 +75,14 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Celery")
 		os.Exit(1)
 	}
+	if err = (&controllers.CeleryBrokerReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("CeleryBroker"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "CeleryBroker")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	setupLog.Info("starting manager")

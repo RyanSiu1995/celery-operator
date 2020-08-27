@@ -31,7 +31,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	celeryprojectv4 "github.com/RyanSiu1995/celery-operator/api/v4"
+	celeryv4 "github.com/RyanSiu1995/celery-operator/api/v4"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -64,7 +64,7 @@ var _ = BeforeSuite(func(done Done) {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(cfg).ToNot(BeNil())
 
-	err = celeryprojectv4.AddToScheme(scheme.Scheme)
+	err = celeryv4.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	k8sManager, err = ctrl.NewManager(cfg, ctrl.Options{
@@ -78,11 +78,20 @@ var _ = BeforeSuite(func(done Done) {
 		Scheme: scheme.Scheme,
 	}).SetupWithManager(k8sManager)
 	Expect(err).NotTo(HaveOccurred())
+	err = (&CeleryBrokerReconciler{
+		Client: k8sManager.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("CeleryBroker"),
+		Scheme: scheme.Scheme,
+	}).SetupWithManager(k8sManager)
+	Expect(err).NotTo(HaveOccurred())
 
 	go func() {
 		err = k8sManager.Start(ctrl.SetupSignalHandler())
 		Expect(err).ToNot(HaveOccurred())
 	}()
+
+	err = celeryv4.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
 
