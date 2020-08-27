@@ -18,11 +18,16 @@ package controllers
 
 import (
 	"context"
+	sysError "errors"
 
 	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	celeryv4 "github.com/RyanSiu1995/celery-operator/api/v4"
 )
@@ -39,9 +44,42 @@ type CelerySchedulerReconciler struct {
 
 func (r *CelerySchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
-	_ = r.Log.WithValues("celeryscheduler", req.NamespacedName)
+	reqLogger := r.Log.WithValues("celerybroker", req.NamespacedName)
 
 	// your logic here
+	instance := &celeryv4.CeleryScheduler{}
+	err := r.Client.Get(context.TODO(), req.NamespacedName, instance)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			// Request object not found, could have been deleted after reconcile request.
+			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
+			// Return and don't requeue
+			return ctrl.Result{}, nil
+		}
+		// Error reading the object - requeue the request.
+		return ctrl.Result{}, err
+	}
+	// Handle the object creation
+	podList := instance.Generate()
+	for idx, pod := range podList {
+		found := &corev1.Pod{}
+		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
+		if err != nil && errors.IsNotFound(err) {
+			pod = instance.Replace(idx)
+			if err := controllerutil.SetControllerReference(instance, pod, r.Scheme); err != nil {
+				return ctrl.Result{}, err
+			}
+			reqLogger.Info("Creating a new Scheduler pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
+			if err := r.Client.Create(context.TODO(), pod); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+	}
+
+	err = r.Client.Status().Update(context.TODO(), instance)
+	if err != nil {
+		return ctrl.Result{}, sysError.New("Cannot update Scheduler status")
+	}
 
 	return ctrl.Result{}, nil
 }

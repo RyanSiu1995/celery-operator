@@ -17,6 +17,7 @@ limitations under the License.
 package v4
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -25,17 +26,21 @@ import (
 
 // CelerySchedulerSpec defines the desired state of CeleryScheduler
 type CelerySchedulerSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of CeleryScheduler. Edit CeleryScheduler_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Image string `json:"image,omitempty"`
+	// SchedulerClass defines the target scheduler class to use
+	SchedulerClass string `json:"schedulerClass,omitempty"`
+	// AppName defines the target app instance to use
+	AppName string `json:"appName,omitempty"`
+	// DesiredNumber defines the number of worker if autoscaling is disabled
+	Replicas int `json:"replicas,omitempty"`
+	// Resources defines the resources specification for these workers
+	Resources     corev1.ResourceRequirements `json:"resources,omitempty"`
+	BrokerAddress string                      `json:"brokerAddress,omitempty"`
 }
 
 // CelerySchedulerStatus defines the observed state of CeleryScheduler
 type CelerySchedulerStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	PodList []*corev1.Pod `json:"podList,omitempty"`
 }
 
 // +kubebuilder:object:root=true
