@@ -15,7 +15,6 @@ limitations under the License.
 package v4
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -25,27 +24,9 @@ import (
 // CelerySpec defines the desired state of Celery
 type CelerySpec struct {
 	Broker     CeleryBrokerSpec      `json:"broker,omitempty"`
-	Workers    []CeleryWorker        `json:"workers,omitempty"`
+	Workers    []CeleryWorkerSpec    `json:"workers,omitempty"`
 	Schedulers []CelerySchedulerSpec `json:"schedulers,omitempty"`
 	Image      string                `json:"image,omitempty"`
-}
-
-// CeleryWorker defines the behavior of workers
-type CeleryWorker struct {
-	// DesiredNumber defines the number of worker if autoscaling is disabled
-	Replicas int `json:"replicas,omitempty"`
-	// Autoscaling defines the existence of HPA in celery worker
-	Autoscaling bool `json:"autoscaling,omitempty"`
-	// Min defines the minimum of workers if autoscaling is enabled
-	Min int `json:"min,omitempty"`
-	// Max defines the maximum of workers if autoscaling is enabled
-	Max int `json:"max,omitempty"`
-	// Target Queues defines the target queues these workers will handle
-	TargetQueues []string `json:"targetQueues,omitempty"`
-	// Resources defines the resources specification for these workers
-	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
-	// AppName defines the target app instance to use
-	AppName string `json:"appName,omitempty"`
 }
 
 // CeleryStatus defines the observed state of Celery

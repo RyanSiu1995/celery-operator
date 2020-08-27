@@ -102,6 +102,9 @@ var _ = BeforeSuite(func(done Done) {
 	err = celeryv4.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
+	err = celeryv4.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
 	// +kubebuilder:scaffold:scheme
 
 	k8sClient = k8sManager.GetClient()

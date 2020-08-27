@@ -1,0 +1,24 @@
+# permissions for end users to edit celeryworkers.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: celeryworker-editor-role
+rules:
+- apiGroups:
+  - celery.celeryproject.org
+  resources:
+  - celeryworkers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - celery.celeryproject.org
+  resources:
+  - celeryworkers/status
+  verbs:
+  - get
