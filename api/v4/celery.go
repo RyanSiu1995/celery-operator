@@ -73,3 +73,28 @@ func (cr *Celery) GenerateBroker() *CeleryBroker {
 		Spec: cr.Spec.Broker,
 	}
 }
+
+// GenerateSchedulers
+func (cr *Celery) GenerateSchedulers() []*CeleryScheduler {
+	labels := map[string]string{
+		"celery-app": cr.Name,
+		"type":       "broker",
+	}
+	defaultImage := cr.Spec.Image
+	schedulers := make([]*CeleryScheduler, 0)
+	for i, scheduler := range cr.Spec.Schedulers {
+		if scheduler.Image == "" {
+			scheduler.Image = defaultImage
+		}
+		scheduler := &CeleryScheduler{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-scheduler-%d", cr.GetName(), i+1),
+				Namespace: cr.GetNamespace(),
+				Labels:    labels,
+			},
+			Spec: scheduler,
+		}
+		schedulers = append(schedulers, scheduler)
+	}
+	return schedulers
+}

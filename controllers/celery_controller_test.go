@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	celeryv4 "github.com/RyanSiu1995/celery-operator/api/v4"
@@ -32,6 +31,7 @@ var _ = Describe("Celery Creation", func() {
 				err = k8sClient.Create(ctx, celeryObject)
 				Expect(err).NotTo(HaveOccurred())
 
+				// Have the celery object created
 				time.Sleep(2 * time.Second)
 				err = k8sClient.Get(ctx, client.ObjectKey{
 					Namespace: "default",
@@ -40,21 +40,25 @@ var _ = Describe("Celery Creation", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				time.Sleep(2 * time.Second)
+				// Have the broker created
 				err = k8sClient.Get(ctx, client.ObjectKey{
 					Namespace: "default",
 					Name:      "celery-test-1-broker",
 				}, &celeryv4.CeleryBroker{})
 				Expect(err).NotTo(HaveOccurred())
+
+				// Have two schedulers created
 				err = k8sClient.Get(ctx, client.ObjectKey{
 					Namespace: "default",
-					Name:      "celery-test-1-broker-broker",
-				}, &corev1.Pod{})
+					Name:      "celery-test-1-scheduler-1",
+				}, &celeryv4.CeleryScheduler{})
 				Expect(err).NotTo(HaveOccurred())
 				err = k8sClient.Get(ctx, client.ObjectKey{
 					Namespace: "default",
-					Name:      "celery-test-1-broker-broker-service",
-				}, &corev1.Service{})
+					Name:      "celery-test-1-scheduler-2",
+				}, &celeryv4.CeleryScheduler{})
 				Expect(err).NotTo(HaveOccurred())
+
 				err = k8sClient.Get(ctx, client.ObjectKey{
 					Namespace: "default",
 					Name:      "celery-test-1-worker-deployment-0",
