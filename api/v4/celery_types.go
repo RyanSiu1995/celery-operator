@@ -24,29 +24,10 @@ import (
 
 // CelerySpec defines the desired state of Celery
 type CelerySpec struct {
-	Broker  CeleryBrokerType `json:"broker,omitempty"`
+	Broker  CeleryBrokerSpec `json:"broker,omitempty"`
 	Workers []CeleryWorker   `json:"workers,omitempty"`
 	Image   string           `json:"image,omitempty"`
 }
-
-// CeleryBrokerType defines the property of broker
-type CeleryBrokerType struct {
-	// Type defines the type of broker
-	Type BrokerType `json:"type,omitempty"`
-	// BrokerAddress defines the broker address for external broker type
-	// If it is not `external` type, this item will be ignored
-	BrokerAddress string `json:"brokerAddress,omitempty"`
-}
-
-// BrokerType defines the type of broker
-type BrokerType string
-
-const (
-	// RedisBroker is to use a dynamic redis instead within cluster
-	RedisBroker BrokerType = "redis"
-	// ExternalBroker is to use an external broker with given string
-	ExternalBroker BrokerType = "external"
-)
 
 // CeleryWorker defines the behavior of workers
 type CeleryWorker struct {

@@ -37,14 +37,15 @@ spec:
           description: CelerySpec defines the desired state of Celery
           properties:
             broker:
-              description: CeleryBrokerType defines the property of broker
+              description: CeleryBrokerSpec defines the desired state of CeleryBroker
               properties:
                 brokerAddress:
                   description: BrokerAddress defines the broker address for external
                     broker type If it is not `external` type, this item will be ignored
                   type: string
                 type:
-                  description: Type defines the type of broker
+                  description: Foo is an example field of CeleryBroker. Edit CeleryBroker_types.go
+                    to remove/update
                   type: string
               type: object
             image:

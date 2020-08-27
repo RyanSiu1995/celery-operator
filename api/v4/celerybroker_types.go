@@ -29,13 +29,25 @@ type CeleryBrokerSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of CeleryBroker. Edit CeleryBroker_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Type BrokerType `json:"type,omitempty"`
+	// BrokerAddress defines the broker address for external broker type
+	// If it is not `external` type, this item will be ignored
+	BrokerAddress string `json:"brokerAddress,omitempty"`
 }
+
+// BrokerType defines the type of broker
+type BrokerType string
+
+const (
+	// RedisBroker is to use a dynamic redis instead within cluster
+	RedisBroker BrokerType = "redis"
+	// ExternalBroker is to use an external broker with given string
+	ExternalBroker BrokerType = "external"
+)
 
 // CeleryBrokerStatus defines the observed state of CeleryBroker
 type CeleryBrokerStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	BrokerAddress string `json:"brokerAddress,omitempty"`
 }
 
 // +kubebuilder:object:root=true
