@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	celeryprojectv4 "github.com/RyanSiu1995/celery-operator/api/v4"
+	celeryv4 "github.com/RyanSiu1995/celery-operator/api/v4"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -83,6 +84,9 @@ var _ = BeforeSuite(func(done Done) {
 		err = k8sManager.Start(ctrl.SetupSignalHandler())
 		Expect(err).ToNot(HaveOccurred())
 	}()
+
+	err = celeryv4.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
 

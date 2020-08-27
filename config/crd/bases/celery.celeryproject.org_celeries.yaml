@@ -37,7 +37,7 @@ spec:
           description: CelerySpec defines the desired state of Celery
           properties:
             broker:
-              description: CeleryBroker defines the property of broker
+              description: CeleryBrokerType defines the property of broker
               properties:
                 brokerAddress:
                   description: BrokerAddress defines the broker address for external

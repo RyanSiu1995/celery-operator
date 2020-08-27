@@ -24,13 +24,13 @@ import (
 
 // CelerySpec defines the desired state of Celery
 type CelerySpec struct {
-	Broker  CeleryBroker   `json:"broker,omitempty"`
-	Workers []CeleryWorker `json:"workers,omitempty"`
-	Image   string         `json:"image,omitempty"`
+	Broker  CeleryBrokerType `json:"broker,omitempty"`
+	Workers []CeleryWorker   `json:"workers,omitempty"`
+	Image   string           `json:"image,omitempty"`
 }
 
-// CeleryBroker defines the property of broker
-type CeleryBroker struct {
+// CeleryBrokerType defines the property of broker
+type CeleryBrokerType struct {
 	// Type defines the type of broker
 	Type BrokerType `json:"type,omitempty"`
 	// BrokerAddress defines the broker address for external broker type

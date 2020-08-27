@@ -1,4 +1,5 @@
 ## Append samples you want in your CSV to this file as resources ##
 resources:
 - v4_celery.yaml
+- celery_v4_celerybroker.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples

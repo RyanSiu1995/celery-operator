@@ -1,0 +1,24 @@
+# permissions for end users to edit celerybrokers.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: celerybroker-editor-role
+rules:
+- apiGroups:
+  - celery.celeryproject.org
+  resources:
+  - celerybrokers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - celery.celeryproject.org
+  resources:
+  - celerybrokers/status
+  verbs:
+  - get
