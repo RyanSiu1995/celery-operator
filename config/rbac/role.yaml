@@ -66,3 +66,23 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - celery.celeryproject.org
+  resources:
+  - celeryworkers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - celery.celeryproject.org
+  resources:
+  - celeryworkers/status
+  verbs:
+  - get
+  - patch
+  - update

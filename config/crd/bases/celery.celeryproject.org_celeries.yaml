@@ -100,23 +100,15 @@ spec:
               type: array
             workers:
               items:
-                description: CeleryWorker defines the behavior of workers
+                description: CeleryWorkerSpec defines the desired state of CeleryWorker
                 properties:
                   appName:
                     description: AppName defines the target app instance to use
                     type: string
-                  autoscaling:
-                    description: Autoscaling defines the existence of HPA in celery
-                      worker
-                    type: boolean
-                  max:
-                    description: Max defines the maximum of workers if autoscaling
-                      is enabled
-                    type: integer
-                  min:
-                    description: Min defines the minimum of workers if autoscaling
-                      is enabled
-                    type: integer
+                  brokerAddress:
+                    type: string
+                  image:
+                    type: string
                   replicas:
                     description: DesiredNumber defines the number of worker if autoscaling
                       is disabled

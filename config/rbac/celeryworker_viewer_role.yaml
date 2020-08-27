@@ -1,0 +1,20 @@
+# permissions for end users to view celeryworkers.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: celeryworker-viewer-role
+rules:
+- apiGroups:
+  - celery.celeryproject.org
+  resources:
+  - celeryworkers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - celery.celeryproject.org
+  resources:
+  - celeryworkers/status
+  verbs:
+  - get

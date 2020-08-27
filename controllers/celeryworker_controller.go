@@ -32,22 +32,22 @@ import (
 	celeryv4 "github.com/RyanSiu1995/celery-operator/api/v4"
 )
 
-// CelerySchedulerReconciler reconciles a CeleryScheduler object
-type CelerySchedulerReconciler struct {
+// CeleryWorkerReconciler reconciles a CeleryWorker object
+type CeleryWorkerReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=celery.celeryproject.org,resources=celeryschedulers,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=celery.celeryproject.org,resources=celeryschedulers/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=celery.celeryproject.org,resources=celeryworkers,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=celery.celeryproject.org,resources=celeryworkers/status,verbs=get;update;patch
 
-func (r *CelerySchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+func (r *CeleryWorkerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
-	reqLogger := r.Log.WithValues("celeryscheduler", req.NamespacedName)
+	reqLogger := r.Log.WithValues("celeryworker", req.NamespacedName)
 
 	// your logic here
-	instance := &celeryv4.CeleryScheduler{}
+	instance := &celeryv4.CeleryWorker{}
 	err := r.Client.Get(context.TODO(), req.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -63,7 +63,7 @@ func (r *CelerySchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 	existingPodList := &corev1.PodList{}
 	err = r.Client.List(context.TODO(), existingPodList, client.MatchingLabels{
 		"celery-app": instance.Name,
-		"type":       "scheduler",
+		"type":       "worker",
 	})
 	podList := instance.Generate(instance.Spec.Replicas - len(existingPodList.Items))
 	for _, pod := range podList {
@@ -73,7 +73,7 @@ func (r *CelerySchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 			if err := controllerutil.SetControllerReference(instance, pod, r.Scheme); err != nil {
 				return ctrl.Result{}, err
 			}
-			reqLogger.Info("Creating a new Scheduler pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
+			reqLogger.Info("Creating a new Worker pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
 			if err := r.Client.Create(context.TODO(), pod); err != nil {
 				return ctrl.Result{}, err
 			}
@@ -82,14 +82,14 @@ func (r *CelerySchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 
 	err = r.Client.Status().Update(context.TODO(), instance)
 	if err != nil {
-		return ctrl.Result{}, sysError.New("Cannot update Scheduler status")
+		return ctrl.Result{}, sysError.New("Cannot update Worker status")
 	}
 
 	return ctrl.Result{}, nil
 }
 
-func (r *CelerySchedulerReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *CeleryWorkerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&celeryv4.CeleryScheduler{}).
+		For(&celeryv4.CeleryWorker{}).
 		Complete(r)
 }

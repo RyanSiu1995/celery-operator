@@ -1,0 +1,7 @@
+apiVersion: celery.celeryproject.org/v4
+kind: CeleryWorker
+metadata:
+  name: celeryworker-sample
+spec:
+  # Add fields here
+  foo: bar

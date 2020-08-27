@@ -9,7 +9,6 @@ import (
 	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	appv1 "k8s.io/api/apps/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	celeryv4 "github.com/RyanSiu1995/celery-operator/api/v4"
@@ -61,8 +60,13 @@ var _ = Describe("Celery Creation", func() {
 
 				err = k8sClient.Get(ctx, client.ObjectKey{
 					Namespace: "default",
-					Name:      "celery-test-1-worker-deployment-0",
-				}, &appv1.Deployment{})
+					Name:      "celery-test-1-worker-1",
+				}, &celeryv4.CeleryWorker{})
+				Expect(err).NotTo(HaveOccurred())
+				err = k8sClient.Get(ctx, client.ObjectKey{
+					Namespace: "default",
+					Name:      "celery-test-1-worker-2",
+				}, &celeryv4.CeleryWorker{})
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
