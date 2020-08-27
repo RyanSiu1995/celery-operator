@@ -44,7 +44,7 @@ type CelerySchedulerReconciler struct {
 
 func (r *CelerySchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
-	reqLogger := r.Log.WithValues("celerybroker", req.NamespacedName)
+	reqLogger := r.Log.WithValues("celeryscheduler", req.NamespacedName)
 
 	// your logic here
 	instance := &celeryv4.CeleryScheduler{}

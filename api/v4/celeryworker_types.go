@@ -33,7 +33,9 @@ type CeleryWorkerSpec struct {
 	// Resources defines the resources specification for these workers
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 	// AppName defines the target app instance to use
-	AppName string `json:"appName,omitempty"`
+	AppName       string `json:"appName,omitempty"`
+	BrokerAddress string `json:"brokerAddress,omitempty"`
+	Image         string `json:"image,omitempty"`
 }
 
 // CeleryWorkerStatus defines the observed state of CeleryWorker

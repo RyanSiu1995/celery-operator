@@ -105,6 +105,10 @@ spec:
                   appName:
                     description: AppName defines the target app instance to use
                     type: string
+                  brokerAddress:
+                    type: string
+                  image:
+                    type: string
                   replicas:
                     description: DesiredNumber defines the number of worker if autoscaling
                       is disabled

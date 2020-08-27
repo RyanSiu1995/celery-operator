@@ -90,6 +90,12 @@ var _ = BeforeSuite(func(done Done) {
 		Scheme: scheme.Scheme,
 	}).SetupWithManager(k8sManager)
 	Expect(err).NotTo(HaveOccurred())
+	err = (&CeleryWorkerReconciler{
+		Client: k8sManager.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("CeleryWorker"),
+		Scheme: scheme.Scheme,
+	}).SetupWithManager(k8sManager)
+	Expect(err).NotTo(HaveOccurred())
 
 	go func() {
 		err = k8sManager.Start(ctrl.SetupSignalHandler())
