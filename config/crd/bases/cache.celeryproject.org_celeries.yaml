@@ -8,7 +8,7 @@ metadata:
   creationTimestamp: null
   name: celeries.celeryproject.org
 spec:
-  group: celeryproject.org
+  group: celery.celeryproject.org
   names:
     kind: Celery
     listKind: CeleryList
