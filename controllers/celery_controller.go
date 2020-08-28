@@ -19,23 +19,16 @@ package controllers
 import (
 	"context"
 
-	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	celeryv4 "github.com/RyanSiu1995/celery-operator/api/v4"
 )
 
 // CeleryReconciler reconciles a Celery object
-type CeleryReconciler struct {
-	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
-}
+type CeleryReconciler Reconciler
 
 // +kubebuilder:rbac:groups=celery.celeryproject.org,resources=celeries,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=celery.celeryproject.org,resources=celeries/status,verbs=get;update;patch

@@ -20,24 +20,17 @@ import (
 	"context"
 	sysError "errors"
 
-	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	celeryv4 "github.com/RyanSiu1995/celery-operator/api/v4"
 )
 
 // CeleryBrokerReconciler reconciles a CeleryBroker object
-type CeleryBrokerReconciler struct {
-	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
-}
+type CeleryBrokerReconciler Reconciler
 
 // +kubebuilder:rbac:groups=celery.celeryproject.org,resources=celerybrokers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=celery.celeryproject.org,resources=celerybrokers/status,verbs=get;update;patch
