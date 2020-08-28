@@ -1,5 +1,7 @@
 # Celery Operator
 
+[![codecov](https://codecov.io/gh/RyanSiu1995/celery-operator/branch/master/graph/badge.svg)](https://codecov.io/gh/RyanSiu1995/celery-operator)
+
 **Project Status**: The basic CRD has been created. The metrics
 extraction and testing is ongoing right now...
 
