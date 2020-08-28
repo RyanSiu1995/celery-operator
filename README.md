@@ -1,6 +1,6 @@
 # Celery Operator
 
-[![github-action-build](https://github.com/RyanSiu1995/celery-operator/workflows/Build/badge.svg)
+[![github-action-build](https://github.com/RyanSiu1995/celery-operator/workflows/Build/badge.svg)](https://github.com/RyanSiu1995/celery-operator/actions)
 [![codecov](https://codecov.io/gh/RyanSiu1995/celery-operator/branch/master/graph/badge.svg)](https://codecov.io/gh/RyanSiu1995/celery-operator)
 
 **Project Status**: The basic CRD has been created. The metrics
