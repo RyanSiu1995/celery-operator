@@ -85,5 +85,6 @@ func (r *CelerySchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 func (r *CelerySchedulerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&celeryv4.CeleryScheduler{}).
+		Owns(&corev1.Pod{}).
 		Complete(r)
 }
