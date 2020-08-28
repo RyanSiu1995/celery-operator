@@ -57,15 +57,15 @@ func (r *CeleryBrokerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		instance.Status.BrokerAddress = instance.Spec.BrokerAddress
 	} else {
 		pod, service, addr := instance.Generate()
-		if err := controllerutil.SetControllerReference(instance, pod, r.Scheme); err != nil {
-			return ctrl.Result{}, err
-		}
-		if err := controllerutil.SetControllerReference(instance, service, r.Scheme); err != nil {
-			return ctrl.Result{}, err
-		}
 		found := &corev1.Pod{}
 		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
 		if err != nil && errors.IsNotFound(err) {
+			if err := controllerutil.SetControllerReference(instance, pod, r.Scheme); err != nil {
+				return ctrl.Result{}, err
+			}
+			if err := controllerutil.SetControllerReference(instance, service, r.Scheme); err != nil {
+				return ctrl.Result{}, err
+			}
 			reqLogger.Info("Creating a new Broker pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
 			if err := r.Client.Create(context.TODO(), pod); err != nil {
 				return ctrl.Result{}, err
@@ -87,7 +87,10 @@ func (r *CeleryBrokerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 }
 
 func (r *CeleryBrokerReconciler) SetupWithManager(mgr ctrl.Manager) error {
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&celeryv4.CeleryBroker{}).
+		Owns(&corev1.Service{}).
+		Owns(&corev1.Pod{}).
 		Complete(r)
 }
