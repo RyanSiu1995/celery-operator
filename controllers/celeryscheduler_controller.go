@@ -35,6 +35,8 @@ type CelerySchedulerReconciler Reconciler
 
 // +kubebuilder:rbac:groups=celery.celeryproject.org,resources=celeryschedulers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=celery.celeryproject.org,resources=celeryschedulers/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=core,resources=pod,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=pod/status,verbs=get
 
 func (r *CelerySchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()

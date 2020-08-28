@@ -34,6 +34,10 @@ type CeleryBrokerReconciler Reconciler
 
 // +kubebuilder:rbac:groups=celery.celeryproject.org,resources=celerybrokers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=celery.celeryproject.org,resources=celerybrokers/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=core,resources=pod,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=pod/status,verbs=get
+// +kubebuilder:rbac:groups=core,resources=service,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=service/status,verbs=get
 
 func (r *CeleryBrokerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
