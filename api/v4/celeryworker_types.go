@@ -40,8 +40,6 @@ type CeleryWorkerSpec struct {
 
 // CeleryWorkerStatus defines the observed state of CeleryWorker
 type CeleryWorkerStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
 }
 
 // +kubebuilder:object:root=true

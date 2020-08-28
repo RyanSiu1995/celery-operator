@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	sysError "errors"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -42,7 +41,6 @@ func (r *CeleryWorkerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	ctx := context.Background()
 	reqLogger := r.Log.WithValues("celeryworker", req.NamespacedName)
 
-	// your logic here
 	instance := &celeryv4.CeleryWorker{}
 	err := r.Client.Get(ctx, req.NamespacedName, instance)
 	if err != nil {
@@ -61,24 +59,43 @@ func (r *CeleryWorkerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		"celery-app": instance.Name,
 		"type":       "worker",
 	})
+
+	// If there is an update compared to existing spec, recreate all pods
+	if !instance.IsUpToDate(existingPodList.Items) {
+		reqLogger.Info("The spec has been updated...Recreating all the pods...")
+		podList := instance.Generate(instance.Spec.Replicas)
+		for _, pod := range existingPodList.Items {
+			reqLogger.Info("Deleteing the old Worker pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
+			if err := r.Client.Delete(ctx, &pod); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+		for _, pod := range podList {
+			reqLogger.Info("Creating a new Worker pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
+			if err := controllerutil.SetControllerReference(instance, pod, r.Scheme); err != nil {
+				return ctrl.Result{}, err
+			}
+			if err := r.Client.Create(ctx, pod); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+		return ctrl.Result{}, nil
+	}
+
+	// If the replicas is smaller than existing old, create the target one
 	podList := instance.Generate(instance.Spec.Replicas - len(existingPodList.Items))
 	for _, pod := range podList {
 		found := &corev1.Pod{}
 		err = r.Client.Get(ctx, types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
 		if err != nil && errors.IsNotFound(err) {
+			reqLogger.Info("Creating a new Worker pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
 			if err := controllerutil.SetControllerReference(instance, pod, r.Scheme); err != nil {
 				return ctrl.Result{}, err
 			}
-			reqLogger.Info("Creating a new Worker pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
 			if err := r.Client.Create(ctx, pod); err != nil {
 				return ctrl.Result{}, err
 			}
 		}
-	}
-
-	err = r.Client.Status().Update(ctx, instance)
-	if err != nil {
-		return ctrl.Result{}, sysError.New("Cannot update Worker status")
 	}
 
 	return ctrl.Result{}, nil

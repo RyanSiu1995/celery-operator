@@ -1,6 +1,7 @@
 package v4
 
 import (
+	"reflect"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -9,7 +10,7 @@ import (
 )
 
 func (cwr *CeleryWorker) getCommand() []string {
-	command := []string{"celery", "beat", "-A", cwr.Spec.AppName, "-b", cwr.Spec.BrokerAddress}
+	command := []string{"celery", "worker", "-A", cwr.Spec.AppName, "-b", cwr.Spec.BrokerAddress}
 	if len(cwr.Spec.TargetQueues) > 0 {
 		command = append(command, []string{
 			"--queues",
@@ -17,6 +18,18 @@ func (cwr *CeleryWorker) getCommand() []string {
 		}...)
 	}
 	return command
+}
+
+func (cwr *CeleryWorker) IsUpToDate(podList []corev1.Pod) bool {
+	for _, pod := range podList {
+		if len(pod.Spec.Containers) != 1 ||
+			pod.Spec.Containers[0].Image != cwr.Spec.Image ||
+			strings.Join(pod.Spec.Containers[0].Command, "") != strings.Join(cwr.getCommand(), "") ||
+			!reflect.DeepEqual(pod.Spec.Containers[0].Resources, cwr.Spec.Resources) {
+			return false
+		}
+	}
+	return true
 }
 
 // Generate will create the pod spec of the worker.
