@@ -34,14 +34,14 @@ type CeleryReconciler Reconciler
 // +kubebuilder:rbac:groups=celery.celeryproject.org,resources=celeries/status,verbs=get;update;patch
 
 func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
+	ctx := context.Background()
 	reqLogger := r.Log.WithValues("celery", req.NamespacedName)
 
 	//
 	// Fetch the Celery instance
 	//
 	instance := &celeryv4.Celery{}
-	err := r.Client.Get(context.TODO(), req.NamespacedName, instance)
+	err := r.Client.Get(ctx, req.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -58,13 +58,13 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	//
 	broker := instance.GenerateBroker()
 	found := &celeryv4.CeleryBroker{}
-	err = r.Client.Get(context.TODO(), types.NamespacedName{Name: broker.Name, Namespace: broker.Namespace}, found)
+	err = r.Client.Get(ctx, types.NamespacedName{Name: broker.Name, Namespace: broker.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
 		if err := controllerutil.SetControllerReference(instance, broker, r.Scheme); err != nil {
 			return ctrl.Result{}, err
 		}
 		reqLogger.Info("Creating a new CeleryBroker", "CeleryBroker.Namespace", broker.Namespace, "CeleryBroker.Name", broker.Name)
-		if err := r.Client.Create(context.TODO(), broker); err != nil {
+		if err := r.Client.Create(ctx, broker); err != nil {
 			return ctrl.Result{}, err
 		}
 	}
@@ -75,13 +75,13 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	schedulers := instance.GenerateSchedulers()
 	for _, scheduler := range schedulers {
 		found := &celeryv4.CeleryScheduler{}
-		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: scheduler.Name, Namespace: scheduler.Namespace}, found)
+		err = r.Client.Get(ctx, types.NamespacedName{Name: scheduler.Name, Namespace: scheduler.Namespace}, found)
 		if err != nil && errors.IsNotFound(err) {
 			if err := controllerutil.SetControllerReference(instance, scheduler, r.Scheme); err != nil {
 				return ctrl.Result{}, err
 			}
 			reqLogger.Info("Creating a new CeleryScheduler", "CeleryScheduler.Namespace", scheduler.Namespace, "CeleryScheduler.Name", scheduler.Name)
-			if err := r.Client.Create(context.TODO(), scheduler); err != nil {
+			if err := r.Client.Create(ctx, scheduler); err != nil {
 				return ctrl.Result{}, err
 			}
 		}
@@ -93,13 +93,13 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	workers := instance.GenerateWorkers()
 	for _, worker := range workers {
 		found := &celeryv4.CeleryWorker{}
-		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: worker.Name, Namespace: worker.Namespace}, found)
+		err = r.Client.Get(ctx, types.NamespacedName{Name: worker.Name, Namespace: worker.Namespace}, found)
 		if err != nil && errors.IsNotFound(err) {
 			if err := controllerutil.SetControllerReference(instance, worker, r.Scheme); err != nil {
 				return ctrl.Result{}, err
 			}
 			reqLogger.Info("Creating a new CeleryWorker", "CeleryWorker.Namespace", worker.Namespace, "CeleryWorker.Name", worker.Name)
-			if err := r.Client.Create(context.TODO(), worker); err != nil {
+			if err := r.Client.Create(ctx, worker); err != nil {
 				return ctrl.Result{}, err
 			}
 		}
@@ -111,5 +111,8 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 func (r *CeleryReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&celeryv4.Celery{}).
+		Owns(&celeryv4.CeleryWorker{}).
+		Owns(&celeryv4.CeleryScheduler{}).
+		Owns(&celeryv4.CeleryBroker{}).
 		Complete(r)
 }

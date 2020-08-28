@@ -1,0 +1,8 @@
+apiVersion: celery.celeryproject.org/v4
+kind: CeleryBroker
+metadata:
+  name: celery-broker-test-2
+  namespace: default
+spec:
+  broker:
+    type: redis

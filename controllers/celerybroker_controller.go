@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	sysError "errors"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -34,14 +33,18 @@ type CeleryBrokerReconciler Reconciler
 
 // +kubebuilder:rbac:groups=celery.celeryproject.org,resources=celerybrokers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=celery.celeryproject.org,resources=celerybrokers/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=core,resources=pod,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=pod/status,verbs=get
+// +kubebuilder:rbac:groups=core,resources=service,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=service/status,verbs=get
 
 func (r *CeleryBrokerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
+	ctx := context.Background()
 	reqLogger := r.Log.WithValues("celerybroker", req.NamespacedName)
 
 	// your logic here
 	instance := &celeryv4.CeleryBroker{}
-	err := r.Client.Get(context.TODO(), req.NamespacedName, instance)
+	err := r.Client.Get(ctx, req.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -57,37 +60,40 @@ func (r *CeleryBrokerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		instance.Status.BrokerAddress = instance.Spec.BrokerAddress
 	} else {
 		pod, service, addr := instance.Generate()
-		if err := controllerutil.SetControllerReference(instance, pod, r.Scheme); err != nil {
-			return ctrl.Result{}, err
-		}
-		if err := controllerutil.SetControllerReference(instance, service, r.Scheme); err != nil {
-			return ctrl.Result{}, err
-		}
 		found := &corev1.Pod{}
-		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
+		err = r.Client.Get(ctx, types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
 		if err != nil && errors.IsNotFound(err) {
+			if err := controllerutil.SetControllerReference(instance, pod, r.Scheme); err != nil {
+				return ctrl.Result{}, err
+			}
+			if err := controllerutil.SetControllerReference(instance, service, r.Scheme); err != nil {
+				return ctrl.Result{}, err
+			}
 			reqLogger.Info("Creating a new Broker pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
-			if err := r.Client.Create(context.TODO(), pod); err != nil {
+			if err := r.Client.Create(ctx, pod); err != nil {
 				return ctrl.Result{}, err
 			}
 
 			reqLogger.Info("Creating a new Broker service", "Service.Namespace", service.Namespace, "Service.Name", service.Name)
-			if err := r.Client.Create(context.TODO(), service); err != nil {
+			if err := r.Client.Create(ctx, service); err != nil {
 				return ctrl.Result{}, err
 			}
 		}
 		instance.Status.BrokerAddress = addr
 	}
-	err = r.Client.Status().Update(context.TODO(), instance)
+	err = r.Client.Status().Update(ctx, instance)
 	if err != nil {
-		return ctrl.Result{}, sysError.New("Cannot update broker status")
+		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil
 }
 
 func (r *CeleryBrokerReconciler) SetupWithManager(mgr ctrl.Manager) error {
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&celeryv4.CeleryBroker{}).
+		Owns(&corev1.Service{}).
+		Owns(&corev1.Pod{}).
 		Complete(r)
 }
