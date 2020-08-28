@@ -39,12 +39,12 @@ type CelerySchedulerReconciler Reconciler
 // +kubebuilder:rbac:groups=core,resources=pod/status,verbs=get
 
 func (r *CelerySchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
+	ctx := context.Background()
 	reqLogger := r.Log.WithValues("celeryscheduler", req.NamespacedName)
 
 	// your logic here
 	instance := &celeryv4.CeleryScheduler{}
-	err := r.Client.Get(context.TODO(), req.NamespacedName, instance)
+	err := r.Client.Get(ctx, req.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -57,26 +57,26 @@ func (r *CelerySchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 	}
 	// Handle the object creation
 	existingPodList := &corev1.PodList{}
-	err = r.Client.List(context.TODO(), existingPodList, client.MatchingLabels{
+	err = r.Client.List(ctx, existingPodList, client.MatchingLabels{
 		"celery-app": instance.Name,
 		"type":       "scheduler",
 	})
 	podList := instance.Generate(instance.Spec.Replicas - len(existingPodList.Items))
 	for _, pod := range podList {
 		found := &corev1.Pod{}
-		err = r.Client.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
+		err = r.Client.Get(ctx, types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
 		if err != nil && errors.IsNotFound(err) {
 			if err := controllerutil.SetControllerReference(instance, pod, r.Scheme); err != nil {
 				return ctrl.Result{}, err
 			}
 			reqLogger.Info("Creating a new Scheduler pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
-			if err := r.Client.Create(context.TODO(), pod); err != nil {
+			if err := r.Client.Create(ctx, pod); err != nil {
 				return ctrl.Result{}, err
 			}
 		}
 	}
 
-	err = r.Client.Status().Update(context.TODO(), instance)
+	err = r.Client.Status().Update(ctx, instance)
 	if err != nil {
 		return ctrl.Result{}, sysError.New("Cannot update Scheduler status")
 	}
