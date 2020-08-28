@@ -6,6 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Generate Broker defines the way to create one broker based on config
 func (cr *Celery) GenerateBroker() *CeleryBroker {
 	labels := map[string]string{
 		"celery-app": cr.Name,
@@ -22,11 +23,11 @@ func (cr *Celery) GenerateBroker() *CeleryBroker {
 	}
 }
 
-// GenerateSchedulers
+// GenerateSchedulers defines the way to create schedulers based on config
 func (cr *Celery) GenerateSchedulers() []*CeleryScheduler {
 	labels := map[string]string{
 		"celery-app": cr.Name,
-		"type":       "broker",
+		"type":       "scheduler",
 	}
 	defaultImage := cr.Spec.Image
 	brokerAddr := cr.Status.BrokerAddress
@@ -49,10 +50,11 @@ func (cr *Celery) GenerateSchedulers() []*CeleryScheduler {
 	return schedulers
 }
 
+// GenerateWorkers defines the way to create workers based on config
 func (cr *Celery) GenerateWorkers() []*CeleryWorker {
 	labels := map[string]string{
 		"celery-app": cr.Name,
-		"type":       "broker",
+		"type":       "worker",
 	}
 	defaultImage := cr.Spec.Image
 	brokerAddr := cr.Status.BrokerAddress
