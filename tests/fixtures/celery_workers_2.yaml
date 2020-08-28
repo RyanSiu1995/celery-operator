@@ -1,0 +1,13 @@
+apiVersion: celery.celeryproject.org/v4
+kind: CeleryWorker
+metadata:
+  name: celery-worker-test-2
+  namespace: default
+spec:
+  image: test
+  queues:
+    - test1
+    - test2
+  appName: appName
+  replicas: 1
+  brokerAddress: redis://127.0.0.1/1

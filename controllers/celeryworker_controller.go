@@ -35,6 +35,8 @@ type CeleryWorkerReconciler Reconciler
 
 // +kubebuilder:rbac:groups=celery.celeryproject.org,resources=celeryworkers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=celery.celeryproject.org,resources=celeryworkers/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=core,resources=pod,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=pod/status,verbs=get
 
 func (r *CeleryWorkerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
@@ -85,5 +87,6 @@ func (r *CeleryWorkerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 func (r *CeleryWorkerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&celeryv4.CeleryWorker{}).
+		Owns(&corev1.Pod{}).
 		Complete(r)
 }
