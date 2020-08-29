@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"context"
-	"time"
+	"fmt"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -19,14 +19,61 @@ var _ = Describe("Celery CRUD", func() {
 	var uniqueName string
 	var err error
 
+	var ensureBrokerCreated = func() {
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{
+				Namespace: "default",
+				Name:      uniqueName + "-broker",
+			}, &celeryv4.CeleryBroker{})
+		}, 2, 0.01).Should(BeNil())
+	}
+
+	var ensureWorkersCreated = func() {
+		Eventually(func() bool {
+			for i := 0; i < 2; i++ {
+				err = k8sClient.Get(ctx, client.ObjectKey{
+					Namespace: "default",
+					Name:      fmt.Sprintf("%s-worker-%d", uniqueName, i+1),
+				}, &celeryv4.CeleryWorker{})
+				if err != nil {
+					return false
+				}
+			}
+			return true
+		}, 2, 0.01).Should(BeTrue())
+	}
+
+	var ensureSchedulersCreated = func() {
+		Eventually(func() bool {
+			for i := 0; i < 2; i++ {
+				err = k8sClient.Get(ctx, client.ObjectKey{
+					Namespace: "default",
+					Name:      fmt.Sprintf("%s-scheduler-%d", uniqueName, i+1),
+				}, &celeryv4.CeleryScheduler{})
+				if err != nil {
+					return false
+				}
+			}
+			return true
+		}, 2, 0.01).Should(BeTrue())
+	}
+
 	BeforeEach(func() {
 		template = &celeryv4.Celery{}
 		err = getTemplateConfig("../tests/fixtures/celery.yaml", template)
 		Expect(err).NotTo(HaveOccurred())
 		uniqueName = template.Name + rand.String(5)
 		template.Name = uniqueName
+
+		// Create the test object
 		err = k8sClient.Create(ctx, template)
 		Expect(err).NotTo(HaveOccurred())
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{
+				Namespace: "default",
+				Name:      uniqueName,
+			}, &celeryv4.Celery{})
+		}).Should(BeNil())
 	})
 
 	AfterEach(func() {
@@ -35,54 +82,14 @@ var _ = Describe("Celery CRUD", func() {
 	})
 
 	It("should have a single broker and worker", func() {
-		// Have the celery object created
-		time.Sleep(2 * time.Second)
-		err = k8sClient.Get(ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      uniqueName,
-		}, &celeryv4.Celery{})
-		Expect(err).NotTo(HaveOccurred())
-
-		// Have the broker created
-		err = k8sClient.Get(ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      uniqueName + "-broker",
-		}, &celeryv4.CeleryBroker{})
-		Expect(err).NotTo(HaveOccurred())
-
-		// Have two schedulers created
-		err = k8sClient.Get(ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      uniqueName + "-scheduler-1",
-		}, &celeryv4.CeleryScheduler{})
-		Expect(err).NotTo(HaveOccurred())
-		err = k8sClient.Get(ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      uniqueName + "-scheduler-2",
-		}, &celeryv4.CeleryScheduler{})
-		Expect(err).NotTo(HaveOccurred())
-
-		err = k8sClient.Get(ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      uniqueName + "-worker-1",
-		}, &celeryv4.CeleryWorker{})
-		Expect(err).NotTo(HaveOccurred())
-		err = k8sClient.Get(ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      uniqueName + "-worker-2",
-		}, &celeryv4.CeleryWorker{})
-		Expect(err).NotTo(HaveOccurred())
+		ensureBrokerCreated()
+		ensureWorkersCreated()
+		ensureSchedulersCreated()
 	})
 
 	It("should recreate the CRDs", func() {
-		// Have the celery object created
-		time.Sleep(1 * time.Second)
-		err = k8sClient.Get(ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      uniqueName,
-		}, &celeryv4.Celery{})
-		Expect(err).NotTo(HaveOccurred())
-
+		// Delete all brokers and wait for respawning
+		ensureBrokerCreated()
 		err = k8sClient.DeleteAllOf(
 			ctx,
 			&celeryv4.CeleryBroker{},
@@ -93,13 +100,10 @@ var _ = Describe("Celery CRUD", func() {
 			},
 		)
 		Expect(err).NotTo(HaveOccurred())
-		time.Sleep(1 * time.Second)
-		err = k8sClient.Get(ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      uniqueName + "-broker",
-		}, &celeryv4.CeleryBroker{})
-		Expect(err).NotTo(HaveOccurred())
+		ensureBrokerCreated()
 
+		// Delete all schedulers and wait for respawning
+		ensureSchedulersCreated()
 		err = k8sClient.DeleteAllOf(ctx,
 			&celeryv4.CeleryScheduler{},
 			client.InNamespace("default"),
@@ -109,18 +113,10 @@ var _ = Describe("Celery CRUD", func() {
 			},
 		)
 		Expect(err).NotTo(HaveOccurred())
-		time.Sleep(1 * time.Second)
-		err = k8sClient.Get(ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      uniqueName + "-scheduler-1",
-		}, &celeryv4.CeleryScheduler{})
-		Expect(err).NotTo(HaveOccurred())
-		err = k8sClient.Get(ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      uniqueName + "-scheduler-2",
-		}, &celeryv4.CeleryScheduler{})
-		Expect(err).NotTo(HaveOccurred())
+		ensureSchedulersCreated()
 
+		// Delete all workers and wait for respawning
+		ensureWorkersCreated()
 		err = k8sClient.DeleteAllOf(ctx,
 			&celeryv4.CeleryWorker{},
 			client.InNamespace("default"),
@@ -130,16 +126,6 @@ var _ = Describe("Celery CRUD", func() {
 			},
 		)
 		Expect(err).NotTo(HaveOccurred())
-		time.Sleep(1 * time.Second)
-		err = k8sClient.Get(ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      uniqueName + "-worker-1",
-		}, &celeryv4.CeleryWorker{})
-		Expect(err).NotTo(HaveOccurred())
-		err = k8sClient.Get(ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      uniqueName + "-worker-2",
-		}, &celeryv4.CeleryWorker{})
-		Expect(err).NotTo(HaveOccurred())
+		ensureWorkersCreated()
 	})
 })

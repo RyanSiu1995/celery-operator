@@ -1,8 +1,6 @@
 package controllers
 
 import (
-	"time"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -17,6 +15,21 @@ var _ = Describe("CeleryScheduler CRUD", func() {
 	var uniqueName string
 	var err error
 
+	var ensureNumberOfSchedulersToBe = func(target int) *corev1.PodList {
+		podList := &corev1.PodList{}
+		Eventually(func() int {
+			podList := &corev1.PodList{}
+			Eventually(func() error {
+				return k8sClient.List(ctx, podList, client.MatchingLabels{
+					"celery-app": uniqueName,
+					"type":       "scheduler",
+				})
+			}).Should(BeNil())
+			return len(podList.Items)
+		}, 2, 0.01).Should(BeNumerically("==", target))
+		return podList
+	}
+
 	BeforeEach(func() {
 		template = &celeryv4.CeleryScheduler{}
 		err = getTemplateConfig("../tests/fixtures/celery_schedulers.yaml", template)
@@ -26,12 +39,12 @@ var _ = Describe("CeleryScheduler CRUD", func() {
 		err = k8sClient.Create(ctx, template)
 		Expect(err).NotTo(HaveOccurred())
 
-		time.Sleep(1 * time.Second)
-		err = k8sClient.Get(ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      uniqueName,
-		}, template)
-		Expect(err).NotTo(HaveOccurred())
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{
+				Namespace: "default",
+				Name:      uniqueName,
+			}, template)
+		}).Should(BeNil())
 	})
 
 	AfterEach(func() {
@@ -40,26 +53,14 @@ var _ = Describe("CeleryScheduler CRUD", func() {
 	})
 
 	It("should have two scheduler pods", func() {
-		time.Sleep(1 * time.Second)
-		podList := &corev1.PodList{}
-		err = k8sClient.List(ctx, podList, client.MatchingLabels{
-			"celery-app": uniqueName,
-			"type":       "scheduler",
-		})
-		Expect(err).NotTo(HaveOccurred())
-		Expect(len(podList.Items)).To(Equal(2))
+		ensureNumberOfSchedulersToBe(2)
 	})
 
 	It("should respawn the scheduler pod after deletion", func() {
-		time.Sleep(1 * time.Second)
-		podList := &corev1.PodList{}
-		err = k8sClient.List(ctx, podList, client.MatchingLabels{
-			"celery-app": uniqueName,
-			"type":       "scheduler",
-		})
-		Expect(err).NotTo(HaveOccurred())
-		Expect(len(podList.Items)).To(Equal(2))
+		// Get the old pod for comparison
+		podList := ensureNumberOfSchedulersToBe(2)
 
+		// Respawn the pods by deleting the old one
 		err = k8sClient.DeleteAllOf(
 			ctx,
 			&corev1.Pod{},
@@ -70,49 +71,30 @@ var _ = Describe("CeleryScheduler CRUD", func() {
 			},
 		)
 		Expect(err).NotTo(HaveOccurred())
-		time.Sleep(1 * time.Second)
-		newPodList := &corev1.PodList{}
-		err = k8sClient.List(ctx, newPodList, client.MatchingLabels{
-			"celery-app": uniqueName,
-			"type":       "scheduler",
-		})
-		Expect(err).NotTo(HaveOccurred())
-		Expect(len(newPodList.Items)).To(Equal(2))
+		newPodList := ensureNumberOfSchedulersToBe(2)
+
 		for i, _ := range newPodList.Items {
 			Expect(newPodList.Items[i].Name).NotTo(Equal(podList.Items[i].Name))
 		}
 	})
 
 	It("should schedule the pods correctly", func() {
-		time.Sleep(1 * time.Second)
-		podList := &corev1.PodList{}
-		err = k8sClient.List(ctx, podList, client.MatchingLabels{
-			"celery-app": uniqueName,
-			"type":       "scheduler",
-		})
-		Expect(err).NotTo(HaveOccurred())
-		Expect(len(podList.Items)).To(Equal(2))
-
 		template.Spec.Replicas = 3
 		err = k8sClient.Update(ctx, template)
 		Expect(err).NotTo(HaveOccurred())
-		time.Sleep(1 * time.Second)
-		err = k8sClient.List(ctx, podList, client.MatchingLabels{
-			"celery-app": uniqueName,
-			"type":       "scheduler",
-		})
-		Expect(err).NotTo(HaveOccurred())
-		Expect(len(podList.Items)).To(Equal(3))
+		ensureNumberOfSchedulersToBe(3)
+
+		// Wait for the stablization of the resources
+		Consistently(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{
+				Namespace: "default",
+				Name:      uniqueName,
+			}, template)
+		}).Should(BeNil())
 
 		template.Spec.Replicas = 1
 		err = k8sClient.Update(ctx, template)
 		Expect(err).NotTo(HaveOccurred())
-		time.Sleep(1 * time.Second)
-		err = k8sClient.List(ctx, podList, client.MatchingLabels{
-			"celery-app": uniqueName,
-			"type":       "scheduler",
-		})
-		Expect(err).NotTo(HaveOccurred())
-		Expect(len(podList.Items)).To(Equal(1))
+		ensureNumberOfSchedulersToBe(1)
 	})
 })

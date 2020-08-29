@@ -1,8 +1,6 @@
 package controllers
 
 import (
-	"time"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -26,12 +24,12 @@ var _ = Describe("CeleryBroker CRUD", func() {
 		err = k8sClient.Create(ctx, template)
 		Expect(err).NotTo(HaveOccurred())
 
-		time.Sleep(1 * time.Second)
-		err = k8sClient.Get(ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      uniqueName,
-		}, &celeryv4.CeleryBroker{})
-		Expect(err).NotTo(HaveOccurred())
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{
+				Namespace: "default",
+				Name:      uniqueName,
+			}, &celeryv4.CeleryBroker{})
+		}).Should(BeNil())
 	})
 
 	AfterEach(func() {
@@ -40,46 +38,35 @@ var _ = Describe("CeleryBroker CRUD", func() {
 	})
 
 	It("should have a single broker pod and service", func() {
-		time.Sleep(1 * time.Second)
-		err = k8sClient.Get(ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      uniqueName + "-broker",
-		}, &corev1.Pod{})
-		Expect(err).NotTo(HaveOccurred())
-		err = k8sClient.Get(ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      uniqueName + "-broker-service",
-		}, &corev1.Service{})
-		Expect(err).NotTo(HaveOccurred())
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{
+				Namespace: "default",
+				Name:      uniqueName + "-broker",
+			}, &corev1.Pod{})
+		}).Should(BeNil())
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{
+				Namespace: "default",
+				Name:      uniqueName + "-broker-service",
+			}, &corev1.Service{})
+		}).Should(BeNil())
 	})
 
 	It("should recreate the service and pod after deleting them", func() {
-		time.Sleep(1 * time.Second)
-		err = k8sClient.Get(ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      uniqueName + "-broker",
-		}, &corev1.Pod{})
-		Expect(err).NotTo(HaveOccurred())
-		err = k8sClient.Get(ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      uniqueName + "-broker-service",
-		}, &corev1.Service{})
-		Expect(err).NotTo(HaveOccurred())
-
 		// Not able to delete the service
-		err = k8sClient.DeleteAllOf(ctx,
-			&corev1.Service{},
-			client.InNamespace("default"),
-			client.MatchingLabels{
-				"celery-app": uniqueName,
-				"type":       "broker",
-			},
-		)
-		Expect(err).To(HaveOccurred())
-		time.Sleep(1 * time.Second)
+		Consistently(func() error {
+			return k8sClient.DeleteAllOf(ctx,
+				&corev1.Service{},
+				client.InNamespace("default"),
+				client.MatchingLabels{
+					"celery-app": uniqueName,
+					"type":       "broker",
+				},
+			)
+		}).ShouldNot(BeNil())
 
 		// Delete pod
-		err = k8sClient.DeleteAllOf(ctx,
+		k8sClient.DeleteAllOf(ctx,
 			&corev1.Pod{},
 			client.InNamespace("default"),
 			client.MatchingLabels{
@@ -88,11 +75,11 @@ var _ = Describe("CeleryBroker CRUD", func() {
 			},
 		)
 		Expect(err).NotTo(HaveOccurred())
-		time.Sleep(1 * time.Second)
-		err = k8sClient.Get(ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      uniqueName + "-broker",
-		}, &corev1.Pod{})
-		Expect(err).NotTo(HaveOccurred())
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{
+				Namespace: "default",
+				Name:      uniqueName + "-broker",
+			}, &corev1.Pod{})
+		}).Should(BeNil())
 	})
 })
