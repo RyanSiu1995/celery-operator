@@ -11,6 +11,7 @@ import (
 )
 
 var _ = Describe("CeleryBroker CRUD", func() {
+	// Global Test Objects
 	var template *celeryv4.CeleryBroker
 	var uniqueName string
 	var err error

@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -15,48 +16,45 @@ import (
 var ctx = context.TODO()
 
 var _ = Describe("Celery CRUD", func() {
+	// Global Test Objects
 	var template *celeryv4.Celery
 	var uniqueName string
 	var err error
 
-	var ensureBrokerCreated = func() {
-		Eventually(func() error {
-			return k8sClient.Get(ctx, client.ObjectKey{
-				Namespace: "default",
-				Name:      uniqueName + "-broker",
-			}, &celeryv4.CeleryBroker{})
-		}, 2, 0.01).Should(BeNil())
+	// Utility functions
+	var ensureObjectCreatedGenerator = func(targetObject runtime.Object, targetName string, count ...int) func() {
+		timeout := 2
+		pollInterval := 0.01
+		if len(count) == 0 {
+			return func() {
+				Eventually(func() error {
+					return k8sClient.Get(ctx, client.ObjectKey{
+						Namespace: "default",
+						Name:      fmt.Sprintf("%s-%s", uniqueName, targetName),
+					}, targetObject)
+				}, timeout, pollInterval).Should(BeNil())
+			}
+		} else {
+			return func() {
+				Eventually(func() bool {
+					for i := 0; i < count[0]; i++ {
+						err = k8sClient.Get(ctx, client.ObjectKey{
+							Namespace: "default",
+							Name:      fmt.Sprintf("%s-%s-%d", uniqueName, targetName, i+1),
+						}, targetObject)
+						if err != nil {
+							return false
+						}
+					}
+					return true
+				}, timeout, pollInterval).Should(BeTrue())
+			}
+		}
 	}
 
-	var ensureWorkersCreated = func() {
-		Eventually(func() bool {
-			for i := 0; i < 2; i++ {
-				err = k8sClient.Get(ctx, client.ObjectKey{
-					Namespace: "default",
-					Name:      fmt.Sprintf("%s-worker-%d", uniqueName, i+1),
-				}, &celeryv4.CeleryWorker{})
-				if err != nil {
-					return false
-				}
-			}
-			return true
-		}, 2, 0.01).Should(BeTrue())
-	}
-
-	var ensureSchedulersCreated = func() {
-		Eventually(func() bool {
-			for i := 0; i < 2; i++ {
-				err = k8sClient.Get(ctx, client.ObjectKey{
-					Namespace: "default",
-					Name:      fmt.Sprintf("%s-scheduler-%d", uniqueName, i+1),
-				}, &celeryv4.CeleryScheduler{})
-				if err != nil {
-					return false
-				}
-			}
-			return true
-		}, 2, 0.01).Should(BeTrue())
-	}
+	var ensureBrokerCreated = ensureObjectCreatedGenerator(&celeryv4.CeleryBroker{}, "broker")
+	var ensureWorkersCreated = ensureObjectCreatedGenerator(&celeryv4.CeleryWorker{}, "worker", 2)
+	var ensureSchedulersCreated = ensureObjectCreatedGenerator(&celeryv4.CeleryScheduler{}, "scheduler", 2)
 
 	BeforeEach(func() {
 		template = &celeryv4.Celery{}

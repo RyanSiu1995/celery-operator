@@ -11,10 +11,12 @@ import (
 )
 
 var _ = Describe("CeleryScheduler CRUD", func() {
+	// Global Test Objects
 	var template *celeryv4.CeleryScheduler
 	var uniqueName string
 	var err error
 
+	// Utility functions
 	var ensureNumberOfSchedulersToBe = func(target int) *corev1.PodList {
 		podList := &corev1.PodList{}
 		Eventually(func() int {

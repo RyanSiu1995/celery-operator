@@ -13,10 +13,12 @@ import (
 )
 
 var _ = Describe("CeleryWorker CRUD", func() {
+	// Global Test Objects
 	var template *celeryv4.CeleryWorker
 	var uniqueName string
 	var err error
 
+	// Utility functions
 	var ensureNumberOfWorkersToBe = func(target int) *corev1.PodList {
 		podList := &corev1.PodList{}
 		Eventually(func() int {
