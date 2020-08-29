@@ -82,4 +82,113 @@ var _ = Describe("CeleryWorker CRUD", func() {
 		Expect(len(newPodList.Items)).To(Equal(1))
 		Expect(newPodList.Items[0].Name).NotTo(Equal(podList.Items[0].Name))
 	})
+
+	It("should update successfully", func() {
+		celeryworkerSpecInYaml, err := ioutil.ReadFile("../tests/fixtures/celery_workers_3.yaml")
+		Expect(err).NotTo(HaveOccurred())
+		celeryworkerObject := &celeryv4.CeleryWorker{}
+		celeryworkerSpecInJSON, err := yaml.YAMLToJSON(celeryworkerSpecInYaml)
+		Expect(err).NotTo(HaveOccurred())
+		err = json.Unmarshal(celeryworkerSpecInJSON, celeryworkerObject)
+		Expect(err).NotTo(HaveOccurred())
+		err = k8sClient.Create(ctx, celeryworkerObject)
+		Expect(err).NotTo(HaveOccurred())
+
+		time.Sleep(1 * time.Second)
+		old := &celeryv4.CeleryWorker{}
+		err = k8sClient.Get(ctx, client.ObjectKey{
+			Namespace: "default",
+			Name:      "celery-worker-test-3",
+		}, old)
+		Expect(err).NotTo(HaveOccurred())
+		podList := &corev1.PodList{}
+		err = k8sClient.List(ctx, podList, client.MatchingLabels{
+			"celery-app": "celery-worker-test-3",
+			"type":       "worker",
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(podList.Items)).To(Equal(1))
+		Expect(podList.Items[0].Spec.Containers[0].Command).To(Equal([]string{
+			"celery",
+			"worker",
+			"-A",
+			"appName",
+			"-b",
+			"redis://127.0.0.1/1",
+			"--queues",
+			"test1,test2",
+		}))
+
+		old.Spec.TargetQueues = []string{"test1"}
+		err = k8sClient.Update(ctx, old)
+		Expect(err).NotTo(HaveOccurred())
+		time.Sleep(1 * time.Second)
+		err = k8sClient.List(ctx, podList, client.MatchingLabels{
+			"celery-app": "celery-worker-test-3",
+			"type":       "worker",
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(podList.Items)).To(Equal(1))
+		Expect(podList.Items[0].Spec.Containers[0].Command).To(Equal([]string{
+			"celery",
+			"worker",
+			"-A",
+			"appName",
+			"-b",
+			"redis://127.0.0.1/1",
+			"--queues",
+			"test1",
+		}))
+	})
+
+	It("should change the replica successfully", func() {
+		celeryworkerSpecInYaml, err := ioutil.ReadFile("../tests/fixtures/celery_workers_4.yaml")
+		Expect(err).NotTo(HaveOccurred())
+		celeryworkerObject := &celeryv4.CeleryWorker{}
+		celeryworkerSpecInJSON, err := yaml.YAMLToJSON(celeryworkerSpecInYaml)
+		Expect(err).NotTo(HaveOccurred())
+		err = json.Unmarshal(celeryworkerSpecInJSON, celeryworkerObject)
+		Expect(err).NotTo(HaveOccurred())
+		err = k8sClient.Create(ctx, celeryworkerObject)
+		Expect(err).NotTo(HaveOccurred())
+
+		time.Sleep(1 * time.Second)
+		old := &celeryv4.CeleryWorker{}
+		err = k8sClient.Get(ctx, client.ObjectKey{
+			Namespace: "default",
+			Name:      "celery-worker-test-4",
+		}, old)
+		Expect(err).NotTo(HaveOccurred())
+		podList := &corev1.PodList{}
+		err = k8sClient.List(ctx, podList, client.MatchingLabels{
+			"celery-app": "celery-worker-test-4",
+			"type":       "worker",
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(podList.Items)).To(Equal(1))
+
+		old.Spec.Replicas = 4
+		err = k8sClient.Update(ctx, old)
+		Expect(err).NotTo(HaveOccurred())
+		time.Sleep(1 * time.Second)
+		err = k8sClient.List(ctx, podList, client.MatchingLabels{
+			"celery-app": "celery-worker-test-4",
+			"type":       "worker",
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(podList.Items)).To(Equal(4))
+
+		time.Sleep(1 * time.Second)
+
+		old.Spec.Replicas = 1
+		err = k8sClient.Update(ctx, old)
+		Expect(err).NotTo(HaveOccurred())
+		time.Sleep(1 * time.Second)
+		err = k8sClient.List(ctx, podList, client.MatchingLabels{
+			"celery-app": "celery-worker-test-4",
+			"type":       "worker",
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(podList.Items)).To(Equal(1))
+	})
 })

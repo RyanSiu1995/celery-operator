@@ -29,6 +29,15 @@ alpha version will be implemented.
   * [X] Redis Deployment Broker
   * [X] Scheduler Deployment
   * [X] Worker
+* [ ] Pod Scaling
+  * [X] Worker
+  * [X] Scheduler
+  * [ ] Broker
+* [ ] Field update on the CRD
+  * [X] Worker
+  * [ ] Scheduler
+  * [ ] Broker
+  * [ ] Celery Stack
 * [ ] HPA
   * [ ] Implement scaling in broker
   * [ ] Implement scaling in worker
@@ -39,7 +48,7 @@ alpha version will be implemented.
   * [ ] Create Metric Endpoint
 * [ ] Testing
   * [X] Basic Celery Object Creation
-  * [ ] Pod delete and respawning testing
+  * [X] Pod delete and respawning testing
   * [ ] Task Queuing
 
 **Please note that this has not been production ready yet.**

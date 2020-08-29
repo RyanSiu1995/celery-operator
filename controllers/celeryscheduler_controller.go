@@ -61,19 +61,37 @@ func (r *CelerySchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 		"celery-app": instance.Name,
 		"type":       "scheduler",
 	})
-	podList := instance.Generate(instance.Spec.Replicas - len(existingPodList.Items))
-	for _, pod := range podList {
-		found := &corev1.Pod{}
-		err = r.Client.Get(ctx, types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
-		if err != nil && errors.IsNotFound(err) {
-			if err := controllerutil.SetControllerReference(instance, pod, r.Scheme); err != nil {
-				return ctrl.Result{}, err
-			}
-			reqLogger.Info("Creating a new Scheduler pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
-			if err := r.Client.Create(ctx, pod); err != nil {
-				return ctrl.Result{}, err
+	replicaDiff := instance.Spec.Replicas - len(existingPodList.Items)
+	if replicaDiff >= 0 {
+		podList := instance.Generate(instance.Spec.Replicas - len(existingPodList.Items))
+		for _, pod := range podList {
+			found := &corev1.Pod{}
+			err = r.Client.Get(ctx, types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
+			if err != nil && errors.IsNotFound(err) {
+				if err := controllerutil.SetControllerReference(instance, pod, r.Scheme); err != nil {
+					return ctrl.Result{}, err
+				}
+				reqLogger.Info("Creating a new Scheduler pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
+				if err := r.Client.Create(ctx, pod); err != nil {
+					return ctrl.Result{}, err
+				}
 			}
 		}
+	} else {
+		podList := existingPodList.Items[:(replicaDiff * -1)]
+		for _, pod := range podList {
+			found := &corev1.Pod{}
+			err = r.Client.Get(ctx, types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
+			if err != nil {
+				reqLogger.Info("Creating a new Scheduler pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
+				return ctrl.Result{}, err
+			} else {
+				if err = r.Client.Delete(ctx, found); err != nil {
+					return ctrl.Result{}, err
+				}
+			}
+		}
+
 	}
 
 	err = r.Client.Status().Update(ctx, instance)

@@ -1,0 +1,11 @@
+apiVersion: celery.celeryproject.org/v4
+kind: CeleryScheduler
+metadata:
+  name: celery-scheduler-test-3
+  namespace: default
+spec:
+  image: test
+  scheudlerClass: class.A.B
+  appName: appName
+  replicas: 1
+  brokerAddress: redis://127.0.0.1/1
