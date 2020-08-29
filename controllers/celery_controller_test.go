@@ -29,6 +29,11 @@ var _ = Describe("Celery CRUD", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
+	AfterEach(func() {
+		// Clean up the environment to save the computating resources
+		_ = k8sClient.Delete(ctx, template)
+	})
+
 	It("should have a single broker and worker", func() {
 		// Have the celery object created
 		time.Sleep(2 * time.Second)

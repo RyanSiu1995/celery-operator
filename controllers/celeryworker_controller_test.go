@@ -34,6 +34,11 @@ var _ = Describe("CeleryWorker CRUD", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
+	AfterEach(func() {
+		// Clean up the environment to save the computating resources
+		_ = k8sClient.Delete(ctx, template)
+	})
+
 	It("should have two worker pods", func() {
 		podList := &corev1.PodList{}
 		err = k8sClient.List(ctx, podList, client.MatchingLabels{
