@@ -178,6 +178,8 @@ var _ = Describe("CeleryWorker CRUD", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(podList.Items)).To(Equal(4))
 
+		time.Sleep(1 * time.Second)
+
 		old.Spec.Replicas = 1
 		err = k8sClient.Update(ctx, old)
 		Expect(err).NotTo(HaveOccurred())
