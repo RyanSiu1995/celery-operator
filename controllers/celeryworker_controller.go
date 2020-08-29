@@ -82,18 +82,36 @@ func (r *CeleryWorkerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		return ctrl.Result{}, nil
 	}
 
-	// If the replicas is smaller than existing old, create the target one
-	podList := instance.Generate(instance.Spec.Replicas - len(existingPodList.Items))
-	for _, pod := range podList {
-		found := &corev1.Pod{}
-		err = r.Client.Get(ctx, types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
-		if err != nil && errors.IsNotFound(err) {
-			reqLogger.Info("Creating a new Worker pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
-			if err := controllerutil.SetControllerReference(instance, pod, r.Scheme); err != nil {
-				return ctrl.Result{}, err
+	replicaDiff := instance.Spec.Replicas - len(existingPodList.Items)
+	if replicaDiff > 0 {
+		// If the desired replicas is smaller than existing old, create pods
+		podList := instance.Generate(replicaDiff)
+		for _, pod := range podList {
+			found := &corev1.Pod{}
+			err = r.Client.Get(ctx, types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
+			if err != nil && errors.IsNotFound(err) {
+				reqLogger.Info("Creating a new Worker pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
+				if err := controllerutil.SetControllerReference(instance, pod, r.Scheme); err != nil {
+					return ctrl.Result{}, err
+				}
+				if err := r.Client.Create(ctx, pod); err != nil {
+					return ctrl.Result{}, err
+				}
 			}
-			if err := r.Client.Create(ctx, pod); err != nil {
+		}
+	} else if replicaDiff < 0 {
+		// If the desired replicas is larger than existing old, delete pods
+		podList := existingPodList.Items[:(replicaDiff * -1)]
+		for _, pod := range podList {
+			found := &corev1.Pod{}
+			err = r.Client.Get(ctx, types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
+			if err != nil {
+				reqLogger.Info("Creating a new Worker pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
 				return ctrl.Result{}, err
+			} else {
+				if err = r.Client.Delete(ctx, found); err != nil {
+					return ctrl.Result{}, err
+				}
 			}
 		}
 	}
