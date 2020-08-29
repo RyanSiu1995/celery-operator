@@ -123,13 +123,6 @@ var _ = Describe("CeleryWorker CRUD", func() {
 		err = k8sClient.Update(ctx, old)
 		Expect(err).NotTo(HaveOccurred())
 		time.Sleep(1 * time.Second)
-		newWorker := &celeryv4.CeleryWorker{}
-		err = k8sClient.Get(ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      "celery-worker-test-3",
-		}, newWorker)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(newWorker.Spec.TargetQueues).To(Equal([]string{"test1"}))
 		err = k8sClient.List(ctx, podList, client.MatchingLabels{
 			"celery-app": "celery-worker-test-3",
 			"type":       "worker",
