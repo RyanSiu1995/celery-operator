@@ -83,7 +83,7 @@ func (r *CeleryWorkerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	}
 
 	replicaDiff := instance.Spec.Replicas - len(existingPodList.Items)
-	if replicaDiff > 0 {
+	if replicaDiff >= 0 {
 		// If the desired replicas is smaller than existing old, create pods
 		podList := instance.Generate(replicaDiff)
 		for _, pod := range podList {
@@ -99,7 +99,7 @@ func (r *CeleryWorkerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 				}
 			}
 		}
-	} else if replicaDiff < 0 {
+	} else {
 		// If the desired replicas is larger than existing old, delete pods
 		podList := existingPodList.Items[:(replicaDiff * -1)]
 		for _, pod := range podList {

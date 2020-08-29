@@ -82,4 +82,55 @@ var _ = Describe("CeleryScheduler CRUD", func() {
 		Expect(len(newPodList.Items)).To(Equal(1))
 		Expect(newPodList.Items[0].Name).NotTo(Equal(podList.Items[0].Name))
 	})
+
+	It("should schedule the pods correctly", func() {
+		celeryschedulerSpecInYaml, err := ioutil.ReadFile("../tests/fixtures/celery_schedulers_3.yaml")
+		Expect(err).NotTo(HaveOccurred())
+		celeryschedulerObject := &celeryv4.CeleryScheduler{}
+		celeryschedulerSpecInJSON, err := yaml.YAMLToJSON(celeryschedulerSpecInYaml)
+		Expect(err).NotTo(HaveOccurred())
+		err = json.Unmarshal(celeryschedulerSpecInJSON, celeryschedulerObject)
+		Expect(err).NotTo(HaveOccurred())
+		err = k8sClient.Create(ctx, celeryschedulerObject)
+		Expect(err).NotTo(HaveOccurred())
+
+		time.Sleep(1 * time.Second)
+		scheduler := &celeryv4.CeleryScheduler{}
+		err = k8sClient.Get(ctx, client.ObjectKey{
+			Namespace: "default",
+			Name:      "celery-scheduler-test-3",
+		}, scheduler)
+		Expect(err).NotTo(HaveOccurred())
+
+		time.Sleep(1 * time.Second)
+		podList := &corev1.PodList{}
+		err = k8sClient.List(ctx, podList, client.MatchingLabels{
+			"celery-app": "celery-scheduler-test-3",
+			"type":       "scheduler",
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(podList.Items)).To(Equal(1))
+
+		scheduler.Spec.Replicas = 3
+		err = k8sClient.Update(ctx, scheduler)
+		Expect(err).NotTo(HaveOccurred())
+		time.Sleep(1 * time.Second)
+		err = k8sClient.List(ctx, podList, client.MatchingLabels{
+			"celery-app": "celery-scheduler-test-3",
+			"type":       "scheduler",
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(podList.Items)).To(Equal(3))
+
+		scheduler.Spec.Replicas = 2
+		err = k8sClient.Update(ctx, scheduler)
+		Expect(err).NotTo(HaveOccurred())
+		time.Sleep(1 * time.Second)
+		err = k8sClient.List(ctx, podList, client.MatchingLabels{
+			"celery-app": "celery-scheduler-test-3",
+			"type":       "scheduler",
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(podList.Items)).To(Equal(2))
+	})
 })
