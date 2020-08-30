@@ -83,9 +83,11 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{Requeue: true, RequeueAfter: REQUEUE_TIMEOUT}, err
 	}
 	existing := len(existingSchedulers.Items)
+	reqLogger.Info("Checking the difference in schedulers", "existing", existing, "target", len(schedulers))
 	if existing > len(schedulers) {
 		schedulersToBeDeleted := existingSchedulers.Items[:existing-len(schedulers)]
 		for _, s := range schedulersToBeDeleted {
+			reqLogger.Info("Deleteing the scheduler", "CeleryScheduler.Namespace", s.Namespace, "CeleryScheduler.Name", s.Name)
 			err = r.Client.Delete(ctx, &s)
 			if err != nil {
 				return ctrl.Result{Requeue: true, RequeueAfter: REQUEUE_TIMEOUT}, err
@@ -140,6 +142,7 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 	existing = len(existingWorkers.Items)
 	workers := instance.GenerateWorkers()
+	reqLogger.Info("Checking the difference in workers", "existing", existing, "target", len(workers))
 	if existing > len(workers) {
 		workersToBeDeleted := existingWorkers.Items[:existing-len(workers)]
 		for _, s := range workersToBeDeleted {
