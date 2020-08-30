@@ -83,8 +83,8 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{Requeue: true, RequeueAfter: REQUEUE_TIMEOUT}, err
 	}
 	existing := len(existingSchedulers.Items)
-	if len(existingSchedulers.Items) > len(schedulers) {
-		schedulersToBeDeleted := existingSchedulers.Items[:len(existingSchedulers.Items)-len(schedulers)]
+	if existing > len(schedulers) {
+		schedulersToBeDeleted := existingSchedulers.Items[:existing-len(schedulers)]
 		for _, s := range schedulersToBeDeleted {
 			err = r.Client.Delete(ctx, &s)
 			if err != nil {
@@ -92,6 +92,10 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			}
 		}
 	}
+	err = r.Client.List(ctx, existingSchedulers, client.MatchingLabels{
+		"celery-app": instance.Name,
+		"type":       "scheduler",
+	})
 	for i, scheduler := range schedulers {
 		found := &celeryv4.CeleryScheduler{}
 		err = r.Client.Get(ctx, types.NamespacedName{Name: scheduler.Name, Namespace: scheduler.Namespace}, found)
@@ -126,17 +130,57 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	//
 	// Handle workers
 	//
+	existingWorkers := &celeryv4.CeleryWorkerList{}
+	err = r.Client.List(ctx, existingWorkers, client.MatchingLabels{
+		"celery-app": instance.Name,
+		"type":       "worker",
+	})
+	if err != nil {
+		return ctrl.Result{Requeue: true, RequeueAfter: REQUEUE_TIMEOUT}, err
+	}
+	existing = len(existingWorkers.Items)
 	workers := instance.GenerateWorkers()
-	for _, worker := range workers {
+	if existing > len(workers) {
+		workersToBeDeleted := existingWorkers.Items[:existing-len(workers)]
+		for _, s := range workersToBeDeleted {
+			reqLogger.Info("Deleteing the worker", "CeleryWorker.Namespace", s.Namespace, "CeleryWorker.Name", s.Name)
+			err = r.Client.Delete(ctx, &s)
+			if err != nil {
+				return ctrl.Result{Requeue: true, RequeueAfter: REQUEUE_TIMEOUT}, err
+			}
+		}
+	}
+	err = r.Client.List(ctx, existingWorkers, client.MatchingLabels{
+		"celery-app": instance.Name,
+		"type":       "worker",
+	})
+	for i, worker := range workers {
 		found := &celeryv4.CeleryWorker{}
 		err = r.Client.Get(ctx, types.NamespacedName{Name: worker.Name, Namespace: worker.Namespace}, found)
-		if err != nil && errors.IsNotFound(err) {
-			if err := controllerutil.SetControllerReference(instance, worker, r.Scheme); err != nil {
-				return ctrl.Result{}, err
+		if i < existing {
+			if err != nil && errors.IsNotFound(err) {
+				if err := controllerutil.SetControllerReference(instance, worker, r.Scheme); err != nil {
+					return ctrl.Result{}, err
+				}
+				reqLogger.Info("Creating a new CeleryWorker", "CeleryWorker.Namespace", worker.Namespace, "CeleryWorker.Name", worker.Name)
+				if err := r.Client.Create(ctx, worker); err != nil {
+					return ctrl.Result{}, err
+				}
+			} else {
+				reqLogger.Info("Going to patch with name spec", "CeleryWorker.Namespace", worker.Namespace, "CeleryWorker.Name", worker.Name, "CeleryWorker.Spec", worker.Spec)
+				if err := r.Client.Patch(ctx, &existingWorkers.Items[i], client.MergeFrom(worker)); err != nil {
+					return ctrl.Result{Requeue: true}, err
+				}
 			}
-			reqLogger.Info("Creating a new CeleryWorker", "CeleryWorker.Namespace", worker.Namespace, "CeleryWorker.Name", worker.Name)
-			if err := r.Client.Create(ctx, worker); err != nil {
-				return ctrl.Result{}, err
+		} else {
+			if err != nil && errors.IsNotFound(err) {
+				if err := controllerutil.SetControllerReference(instance, worker, r.Scheme); err != nil {
+					return ctrl.Result{}, err
+				}
+				reqLogger.Info("Creating a new CeleryWorker", "CeleryWorker.Namespace", worker.Namespace, "CeleryWorker.Name", worker.Name)
+				if err := r.Client.Create(ctx, worker); err != nil {
+					return ctrl.Result{}, err
+				}
 			}
 		}
 	}
