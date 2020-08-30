@@ -22,11 +22,11 @@ var _ = Describe("Celery CRUD", func() {
 	var err error
 
 	// Utility functions
-	var ensureObjectCreatedGenerator = func(targetObject runtime.Object, targetName string, count ...int) func() {
+	var ensureObjectCreatedGenerator = func(targetObject runtime.Object, targetName string, defaultCount ...int) func(...int) {
 		timeout := 2
 		pollInterval := 0.01
-		if len(count) == 0 {
-			return func() {
+		if len(defaultCount) == 0 {
+			return func(_ ...int) {
 				Eventually(func() error {
 					return k8sClient.Get(ctx, client.ObjectKey{
 						Namespace: "default",
@@ -35,9 +35,13 @@ var _ = Describe("Celery CRUD", func() {
 				}, timeout, pollInterval).Should(BeNil())
 			}
 		} else {
-			return func() {
+			return func(count ...int) {
+				def := defaultCount[0]
+				if len(count) > 0 {
+					def = count[0]
+				}
 				Eventually(func() bool {
-					for i := 0; i < count[0]; i++ {
+					for i := 0; i < def; i++ {
 						err = k8sClient.Get(ctx, client.ObjectKey{
 							Namespace: "default",
 							Name:      fmt.Sprintf("%s-%s-%d", uniqueName, targetName, i+1),
@@ -125,5 +129,50 @@ var _ = Describe("Celery CRUD", func() {
 		)
 		Expect(err).NotTo(HaveOccurred())
 		ensureWorkersCreated()
+	})
+
+	It("should increase and decrease the scheduler properly", func() {
+		// Delete all schedulers and wait for respawning
+		ensureSchedulersCreated()
+		template.Spec.Schedulers = append(template.Spec.Schedulers, celeryv4.CelerySchedulerSpec{
+			SchedulerClass: "a.b.c",
+			AppName:        "appName2",
+			Replicas:       1,
+		})
+		err = k8sClient.Update(ctx, template)
+		Expect(err).NotTo(HaveOccurred())
+		ensureSchedulersCreated(3)
+
+		// Delete all schedulers and wait for respawning
+		ensureSchedulersCreated()
+		template.Spec.Schedulers = template.Spec.Schedulers[0:]
+		err = k8sClient.Update(ctx, template)
+		Expect(err).NotTo(HaveOccurred())
+		ensureSchedulersCreated(1)
+	})
+
+	It("should update the scheduler correctly", func() {
+		Skip("scheduler logic hasn't been implemented yet")
+		// Delete all schedulers and wait for respawning
+		ensureSchedulersCreated()
+		template.Spec.Schedulers[0].AppName = "updatedAppName"
+		template.Spec.Schedulers = append(template.Spec.Schedulers, celeryv4.CelerySchedulerSpec{
+			SchedulerClass: "a.b.c",
+			AppName:        "appName2",
+			Replicas:       1,
+		})
+		err = k8sClient.Update(ctx, template)
+		Expect(err).NotTo(HaveOccurred())
+		ensureSchedulersCreated(3)
+		Eventually(func() string {
+			scheduler := &celeryv4.CeleryScheduler{}
+			Eventually(func() error {
+				return k8sClient.Get(ctx, client.ObjectKey{
+					Namespace: "default",
+					Name:      fmt.Sprintf("%s-scheduler-1", uniqueName),
+				}, scheduler)
+			}).Should(BeNil())
+			return scheduler.Spec.AppName
+		}, 2, 0.1).Should(Equal("updateAppName"))
 	})
 })

@@ -18,12 +18,15 @@ package controllers
 
 import (
 	"errors"
+	"time"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+const REQUEUE_TIMEOUT time.Duration = 2 * time.Second
 
 type Reconciler struct {
 	client.Client
