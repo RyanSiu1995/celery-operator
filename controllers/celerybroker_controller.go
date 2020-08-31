@@ -58,6 +58,14 @@ func (r *CeleryBrokerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	// Handle the object creation
 	if instance.Spec.Type == celeryv4.ExternalBroker {
 		instance.Status.BrokerAddress = instance.Spec.BrokerAddress
+		pod, _, _ := instance.Generate()
+		found := &corev1.Pod{}
+		err = r.Client.Get(ctx, types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
+		if err == nil {
+			if err = r.Client.Delete(ctx, found); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
 	} else {
 		pod, service, addr := instance.Generate()
 		found := &corev1.Pod{}
