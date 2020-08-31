@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -129,6 +130,37 @@ var _ = Describe("Celery CRUD", func() {
 		)
 		Expect(err).NotTo(HaveOccurred())
 		ensureWorkersCreated()
+	})
+
+	It("should update the broker properly", func() {
+		ensureBrokerCreated()
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{
+				Namespace: "default",
+				Name:      fmt.Sprintf("%s-broker-broker", uniqueName),
+			}, &corev1.Pod{})
+		}).Should(BeNil())
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{
+				Namespace: "default",
+				Name:      fmt.Sprintf("%s-broker-broker-service", uniqueName),
+			}, &corev1.Service{})
+		}).Should(BeNil())
+
+		template.Spec.Broker.Type = celeryv4.ExternalBroker
+		err = k8sClient.Update(ctx, template)
+		Expect(err).NotTo(HaveOccurred())
+
+		Eventually(func() celeryv4.BrokerType {
+			broker := &celeryv4.CeleryBroker{}
+			Eventually(func() error {
+				return k8sClient.Get(ctx, client.ObjectKey{
+					Namespace: "default",
+					Name:      fmt.Sprintf("%s-broker", uniqueName),
+				}, broker)
+			}).Should(BeNil())
+			return broker.Spec.Type
+		}, 2, 0.1).Should(Equal(celeryv4.ExternalBroker))
 	})
 
 	It("should increase and decrease the scheduler properly", func() {

@@ -58,8 +58,8 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// Handle Broker object
 	//
 	broker := instance.GenerateBroker()
-	found := &celeryv4.CeleryBroker{}
-	err = r.Client.Get(ctx, types.NamespacedName{Name: broker.Name, Namespace: broker.Namespace}, found)
+	existingBroker := &celeryv4.CeleryBroker{}
+	err = r.Client.Get(ctx, types.NamespacedName{Name: broker.Name, Namespace: broker.Namespace}, existingBroker)
 	if err != nil && errors.IsNotFound(err) {
 		if err := controllerutil.SetControllerReference(instance, broker, r.Scheme); err != nil {
 			return ctrl.Result{}, err
@@ -67,6 +67,21 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		reqLogger.Info("Creating a new CeleryBroker", "CeleryBroker.Namespace", broker.Namespace, "CeleryBroker.Name", broker.Name)
 		if err := r.Client.Create(ctx, broker); err != nil {
 			return ctrl.Result{}, err
+		}
+	} else {
+		if !existingBroker.Equal(broker) {
+			reqLogger.Info("Updating CeleryBroker",
+				"OldCeleryBroker.Namespace", existingBroker.Namespace,
+				"OldCeleryBroker.Name", existingBroker.Name,
+				"OldCeleryBroker.Spec", existingBroker.Spec,
+				"NewCeleryBroker.Namespace", broker.Namespace,
+				"NewCeleryBroker.Name", broker.Name,
+				"NewCeleryBroker.Spec", broker.Spec)
+			existingBroker.Spec = broker.Spec
+			if err := r.Client.Update(ctx, existingBroker); err != nil {
+				reqLogger.Error(err, "Error in patching the broker")
+				return ctrl.Result{}, err
+			}
 		}
 	}
 
