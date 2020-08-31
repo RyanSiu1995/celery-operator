@@ -127,7 +127,8 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				}
 			} else {
 				reqLogger.Info("Going to patch with name spec", "CeleryScheduler.Namespace", scheduler.Namespace, "CeleryScheduler.Name", scheduler.Name, "CeleryScheduler.Spec", scheduler.Spec)
-				if err := r.Client.Patch(ctx, &existingSchedulers.Items[i], client.MergeFrom(scheduler)); err != nil {
+				existingSchedulers.Items[i].Spec = scheduler.Spec
+				if err := r.Client.Update(ctx, &existingSchedulers.Items[i]); err != nil {
 					return ctrl.Result{Requeue: true}, err
 				}
 			}
@@ -186,7 +187,8 @@ func (r *CeleryReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				}
 			} else {
 				reqLogger.Info("Going to patch with name spec", "CeleryWorker.Namespace", worker.Namespace, "CeleryWorker.Name", worker.Name, "CeleryWorker.Spec", worker.Spec)
-				if err := r.Client.Patch(ctx, &existingWorkers.Items[i], client.MergeFrom(worker)); err != nil {
+				existingWorkers.Items[i].Spec = worker.Spec
+				if err := r.Client.Update(ctx, &existingWorkers.Items[i]); err != nil {
 					return ctrl.Result{Requeue: true}, err
 				}
 			}
