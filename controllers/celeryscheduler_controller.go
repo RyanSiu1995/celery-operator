@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	sysError "errors"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -92,11 +91,6 @@ func (r *CelerySchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 			}
 		}
 
-	}
-
-	err = r.Client.Status().Update(ctx, instance)
-	if err != nil {
-		return ctrl.Result{}, sysError.New("Cannot update Scheduler status")
 	}
 
 	return ctrl.Result{}, nil

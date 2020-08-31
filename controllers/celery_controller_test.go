@@ -22,11 +22,11 @@ var _ = Describe("Celery CRUD", func() {
 	var err error
 
 	// Utility functions
-	var ensureObjectCreatedGenerator = func(targetObject runtime.Object, targetName string, count ...int) func() {
+	var ensureObjectCreatedGenerator = func(targetObject runtime.Object, targetName string, defaultCount ...int) func(...int) {
 		timeout := 2
 		pollInterval := 0.01
-		if len(count) == 0 {
-			return func() {
+		if len(defaultCount) == 0 {
+			return func(_ ...int) {
 				Eventually(func() error {
 					return k8sClient.Get(ctx, client.ObjectKey{
 						Namespace: "default",
@@ -35,9 +35,13 @@ var _ = Describe("Celery CRUD", func() {
 				}, timeout, pollInterval).Should(BeNil())
 			}
 		} else {
-			return func() {
+			return func(count ...int) {
+				def := defaultCount[0]
+				if len(count) > 0 {
+					def = count[0]
+				}
 				Eventually(func() bool {
-					for i := 0; i < count[0]; i++ {
+					for i := 0; i < def; i++ {
 						err = k8sClient.Get(ctx, client.ObjectKey{
 							Namespace: "default",
 							Name:      fmt.Sprintf("%s-%s-%d", uniqueName, targetName, i+1),
@@ -125,5 +129,106 @@ var _ = Describe("Celery CRUD", func() {
 		)
 		Expect(err).NotTo(HaveOccurred())
 		ensureWorkersCreated()
+	})
+
+	It("should increase and decrease the scheduler properly", func() {
+		// Delete all schedulers and wait for respawning
+		ensureSchedulersCreated()
+		template.Spec.Schedulers = append(template.Spec.Schedulers, celeryv4.CelerySchedulerSpec{
+			SchedulerClass: "a.b.c",
+			AppName:        "appName2",
+			Replicas:       1,
+		})
+		err = k8sClient.Update(ctx, template)
+		Expect(err).NotTo(HaveOccurred())
+		ensureSchedulersCreated(3)
+		Eventually(func() int {
+			list := &celeryv4.CelerySchedulerList{}
+			Eventually(func() error {
+				return k8sClient.List(ctx, list, client.MatchingLabels{
+					"celery-app": template.Name,
+					"type":       "scheduler",
+				})
+			}).Should(BeNil())
+			return len(list.Items)
+		}).Should(BeNumerically("==", 3))
+
+		// Delete all schedulers and wait for respawning
+		ensureSchedulersCreated()
+		template.Spec.Schedulers = template.Spec.Schedulers[:1]
+		err = k8sClient.Update(ctx, template)
+		Expect(err).NotTo(HaveOccurred())
+		ensureSchedulersCreated(1)
+		Eventually(func() int {
+			list := &celeryv4.CelerySchedulerList{}
+			Eventually(func() error {
+				return k8sClient.List(ctx, list, client.MatchingLabels{
+					"celery-app": template.Name,
+					"type":       "scheduler",
+				})
+			}).Should(BeNil())
+			return len(list.Items)
+		}, 2, 0.1).Should(BeNumerically("==", 1))
+	})
+
+	It("should update the scheduler correctly", func() {
+		Skip("scheduler logic hasn't been implemented yet")
+		// Delete all schedulers and wait for respawning
+		ensureSchedulersCreated()
+		template.Spec.Schedulers[0].AppName = "updatedAppName"
+		template.Spec.Schedulers = append(template.Spec.Schedulers, celeryv4.CelerySchedulerSpec{
+			SchedulerClass: "a.b.c",
+			AppName:        "appName2",
+			Replicas:       1,
+		})
+		err = k8sClient.Update(ctx, template)
+		Expect(err).NotTo(HaveOccurred())
+		ensureSchedulersCreated(3)
+		Eventually(func() string {
+			scheduler := &celeryv4.CeleryScheduler{}
+			Eventually(func() error {
+				return k8sClient.Get(ctx, client.ObjectKey{
+					Namespace: "default",
+					Name:      fmt.Sprintf("%s-scheduler-1", uniqueName),
+				}, scheduler)
+			}).Should(BeNil())
+			return scheduler.Spec.AppName
+		}, 2, 0.1).Should(Equal("updateAppName"))
+	})
+
+	It("should increase and decrease the worker properly", func() {
+		ensureWorkersCreated()
+		template.Spec.Workers = append(template.Spec.Workers, celeryv4.CeleryWorkerSpec{
+			AppName:  "appName2",
+			Replicas: 1,
+		})
+		err = k8sClient.Update(ctx, template)
+		Expect(err).NotTo(HaveOccurred())
+		ensureWorkersCreated(3)
+		Eventually(func() int {
+			list := &celeryv4.CeleryWorkerList{}
+			Eventually(func() error {
+				return k8sClient.List(ctx, list, client.MatchingLabels{
+					"celery-app": template.Name,
+					"type":       "worker",
+				})
+			}).Should(BeNil())
+			return len(list.Items)
+		}, 2, 0.1).Should(BeNumerically("==", 3))
+
+		template.Spec.Workers = template.Spec.Workers[:1]
+		err = k8sClient.Update(ctx, template)
+		Expect(err).NotTo(HaveOccurred())
+		ensureWorkersCreated(1)
+		Eventually(func() int {
+			list := &celeryv4.CeleryWorkerList{}
+			Eventually(func() error {
+				return k8sClient.List(ctx, list, client.MatchingLabels{
+					"celery-app": template.Name,
+					"type":       "worker",
+				})
+			}).Should(BeNil())
+			return len(list.Items)
+		}, 2, 0.1).Should(BeNumerically("==", 1))
 	})
 })
