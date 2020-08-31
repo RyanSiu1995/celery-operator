@@ -155,7 +155,7 @@ var _ = Describe("Celery CRUD", func() {
 
 		// Delete all schedulers and wait for respawning
 		ensureSchedulersCreated()
-		template.Spec.Schedulers = template.Spec.Schedulers[:0]
+		template.Spec.Schedulers = template.Spec.Schedulers[:1]
 		err = k8sClient.Update(ctx, template)
 		Expect(err).NotTo(HaveOccurred())
 		ensureSchedulersCreated(1)
@@ -168,7 +168,7 @@ var _ = Describe("Celery CRUD", func() {
 				})
 			}).Should(BeNil())
 			return len(list.Items)
-		}).Should(BeNumerically("==", 1))
+		}, 2, 0.1).Should(BeNumerically("==", 1))
 	})
 
 	It("should update the scheduler correctly", func() {
@@ -216,7 +216,7 @@ var _ = Describe("Celery CRUD", func() {
 			return len(list.Items)
 		}, 2, 0.1).Should(BeNumerically("==", 3))
 
-		template.Spec.Workers = template.Spec.Workers[:0]
+		template.Spec.Workers = template.Spec.Workers[:1]
 		err = k8sClient.Update(ctx, template)
 		Expect(err).NotTo(HaveOccurred())
 		ensureWorkersCreated(1)
@@ -229,6 +229,6 @@ var _ = Describe("Celery CRUD", func() {
 				})
 			}).Should(BeNil())
 			return len(list.Items)
-		}).Should(BeNumerically("==", 1))
+		}, 2, 0.1).Should(BeNumerically("==", 1))
 	})
 })
