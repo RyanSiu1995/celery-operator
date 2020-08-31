@@ -29,7 +29,7 @@ var _ = Describe("CeleryBroker CRUD", func() {
 			return k8sClient.Get(ctx, client.ObjectKey{
 				Namespace: "default",
 				Name:      uniqueName,
-			}, &celeryv4.CeleryBroker{})
+			}, template)
 		}).Should(BeNil())
 	})
 
@@ -51,6 +51,35 @@ var _ = Describe("CeleryBroker CRUD", func() {
 				Name:      uniqueName + "-broker-service",
 			}, &corev1.Service{})
 		}).Should(BeNil())
+	})
+
+	It("should update the broker correctly", func() {
+		template.Spec.Type = celeryv4.ExternalBroker
+		err = k8sClient.Update(ctx, template)
+		Expect(err).To(BeNil())
+
+		Eventually(func() celeryv4.BrokerType {
+			newBroker := &celeryv4.CeleryBroker{}
+			Eventually(func() error {
+				return k8sClient.Get(ctx, client.ObjectKey{
+					Namespace: "default",
+					Name:      uniqueName,
+				}, newBroker)
+			}).Should(BeNil())
+			return newBroker.Spec.Type
+		}).Should(Equal(celeryv4.ExternalBroker))
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{
+				Namespace: "default",
+				Name:      uniqueName + "-broker",
+			}, &corev1.Pod{})
+		}, 2, 0.1).ShouldNot(BeNil())
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{
+				Namespace: "default",
+				Name:      uniqueName + "-broker-service",
+			}, &corev1.Service{})
+		}, 2, 0.1).ShouldNot(BeNil())
 	})
 
 	It("should recreate the service and pod after deleting them", func() {

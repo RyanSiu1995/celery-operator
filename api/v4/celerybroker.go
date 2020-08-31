@@ -8,6 +8,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
+func (cbr *CeleryBroker) Equal(target *CeleryBroker) bool {
+	return cbr.Spec.Type == target.Spec.Type
+}
+
 // Generate will create the pod spec of the broker.
 func (cbr *CeleryBroker) Generate() (*corev1.Pod, *corev1.Service, string) {
 	labels := map[string]string{

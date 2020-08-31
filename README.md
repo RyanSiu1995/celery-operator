@@ -29,14 +29,13 @@ alpha version will be implemented.
   * [X] Redis Deployment Broker
   * [X] Scheduler Deployment
   * [X] Worker
-* [ ] Pod Scaling
+* [X] Pod Scaling
   * [X] Worker
   * [X] Scheduler
-  * [ ] Broker
 * [ ] Field update on the CRD
   * [X] Worker
   * [ ] Scheduler
-  * [ ] Broker
+  * [X] Broker
   * [ ] Celery Stack
 * [ ] HPA
   * [ ] Implement scaling in broker
