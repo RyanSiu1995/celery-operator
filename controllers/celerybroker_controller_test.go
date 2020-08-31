@@ -73,13 +73,13 @@ var _ = Describe("CeleryBroker CRUD", func() {
 				Namespace: "default",
 				Name:      uniqueName + "-broker",
 			}, &corev1.Pod{})
-		}).ShouldNot(BeNil())
+		}, 2, 0.1).ShouldNot(BeNil())
 		Eventually(func() error {
 			return k8sClient.Get(ctx, client.ObjectKey{
 				Namespace: "default",
 				Name:      uniqueName + "-broker-service",
 			}, &corev1.Service{})
-		}).ShouldNot(BeNil())
+		}, 2, 0.1).ShouldNot(BeNil())
 	})
 
 	It("should recreate the service and pod after deleting them", func() {
