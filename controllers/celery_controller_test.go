@@ -204,7 +204,6 @@ var _ = Describe("Celery CRUD", func() {
 	})
 
 	It("should update the scheduler correctly", func() {
-		Skip("scheduler logic hasn't been implemented yet")
 		// Delete all schedulers and wait for respawning
 		ensureSchedulersCreated()
 		template.Spec.Schedulers[0].AppName = "updatedAppName"
@@ -225,7 +224,52 @@ var _ = Describe("Celery CRUD", func() {
 				}, scheduler)
 			}).Should(BeNil())
 			return scheduler.Spec.AppName
-		}, 2, 0.1).Should(Equal("updateAppName"))
+		}, 2, 0.1).Should(Equal("updatedAppName"))
+	})
+
+	It("should update worker correctly", func() {
+		ensureWorkersCreated()
+		podList := &corev1.PodList{}
+		Eventually(func() []string {
+			Eventually(func() int {
+				Eventually(func() error {
+					return k8sClient.List(ctx, podList, client.MatchingLabels{
+						"celery-app": fmt.Sprintf("%s-worker-1", uniqueName),
+						"type":       "worker",
+					})
+				}).Should(BeNil())
+				return len(podList.Items)
+			}).Should(BeNumerically("==", 1))
+			return podList.Items[0].Spec.Containers[0].Command
+		}).Should(Equal([]string{
+			"celery",
+			"worker",
+			"-A",
+			"test1",
+			"-b",
+			"", // FIXME The broker is not set
+		}))
+		template.Spec.Workers[0].AppName = "newAppName"
+		err = k8sClient.Update(ctx, template)
+		Eventually(func() []string {
+			Eventually(func() int {
+				Eventually(func() error {
+					return k8sClient.List(ctx, podList, client.MatchingLabels{
+						"celery-app": fmt.Sprintf("%s-worker-1", uniqueName),
+						"type":       "worker",
+					})
+				}).Should(BeNil())
+				return len(podList.Items)
+			}).Should(BeNumerically("==", 1)) // FIXME This is not the correct replicas
+			return podList.Items[0].Spec.Containers[0].Command
+		}).Should(Equal([]string{
+			"celery",
+			"worker",
+			"-A",
+			"newAppName",
+			"-b",
+			"", // FIXME The broker is not set
+		}))
 	})
 
 	It("should increase and decrease the worker properly", func() {

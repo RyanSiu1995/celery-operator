@@ -1,10 +1,25 @@
 package v4
 
 import (
+	"reflect"
+	"strings"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 )
+
+func (csr *CeleryScheduler) IsUpToDate(podList []corev1.Pod) bool {
+	for _, pod := range podList {
+		if len(pod.Spec.Containers) != 1 ||
+			pod.Spec.Containers[0].Image != csr.Spec.Image ||
+			strings.Join(pod.Spec.Containers[0].Command, "") != strings.Join(csr.getCommand(), "") ||
+			!reflect.DeepEqual(pod.Spec.Containers[0].Resources, csr.Spec.Resources) {
+			return false
+		}
+	}
+	return true
+}
 
 func (csr *CeleryScheduler) getCommand() []string {
 	command := []string{"celery", "beat", "-A", csr.Spec.AppName, "-b", csr.Spec.BrokerAddress}

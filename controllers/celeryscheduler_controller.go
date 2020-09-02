@@ -60,6 +60,28 @@ func (r *CelerySchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 		"celery-app": instance.Name,
 		"type":       "scheduler",
 	})
+
+	if !instance.IsUpToDate(existingPodList.Items) {
+		reqLogger.Info("The spec has been updated...Recreating all the pods...")
+		for _, pod := range existingPodList.Items {
+			reqLogger.Info("Deleteing the old Worker pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
+			if err := r.Client.Delete(ctx, &pod); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+		podList := instance.Generate()
+		for _, pod := range podList {
+			reqLogger.Info("Creating a new Scheduler pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
+			if err := controllerutil.SetControllerReference(instance, pod, r.Scheme); err != nil {
+				return ctrl.Result{}, err
+			}
+			if err := r.Client.Create(ctx, pod); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+		return ctrl.Result{}, nil
+	}
+
 	replicaDiff := instance.Spec.Replicas - len(existingPodList.Items)
 	if replicaDiff >= 0 {
 		podList := instance.Generate(instance.Spec.Replicas - len(existingPodList.Items))
