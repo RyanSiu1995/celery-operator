@@ -204,7 +204,6 @@ var _ = Describe("Celery CRUD", func() {
 	})
 
 	It("should update the scheduler correctly", func() {
-		Skip("scheduler logic hasn't been implemented yet")
 		// Delete all schedulers and wait for respawning
 		ensureSchedulersCreated()
 		template.Spec.Schedulers[0].AppName = "updatedAppName"
@@ -225,7 +224,7 @@ var _ = Describe("Celery CRUD", func() {
 				}, scheduler)
 			}).Should(BeNil())
 			return scheduler.Spec.AppName
-		}, 2, 0.1).Should(Equal("updateAppName"))
+		}, 2, 0.1).Should(Equal("updatedAppName"))
 	})
 
 	It("should update worker correctly", func() {
