@@ -32,11 +32,11 @@ alpha version will be implemented.
 * [X] Pod Scaling
   * [X] Worker
   * [X] Scheduler
-* [ ] Field update on the CRD
+* [X] Field update on the CRD
   * [X] Worker
-  * [ ] Scheduler
+  * [X] Scheduler
   * [X] Broker
-  * [ ] Celery Stack
+  * [X] Celery Stack
 * [ ] HPA
   * [ ] Implement scaling in broker
   * [ ] Implement scaling in worker
