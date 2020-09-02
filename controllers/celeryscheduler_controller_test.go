@@ -99,4 +99,32 @@ var _ = Describe("CeleryScheduler CRUD", func() {
 		Expect(err).NotTo(HaveOccurred())
 		ensureNumberOfSchedulersToBe(1)
 	})
+
+	It("should update the scheduler correctly", func() {
+		template.Spec.AppName = "updatedAppName"
+		err = k8sClient.Update(ctx, template)
+		Expect(err).NotTo(HaveOccurred())
+		ensureNumberOfSchedulersToBe(2)
+
+		// Wait for the stablization of the resources
+		Consistently(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{
+				Namespace: "default",
+				Name:      uniqueName,
+			}, template)
+		}).Should(BeNil())
+
+		expectedCommand := []string{
+			"celery",
+			"beat",
+			"-A",
+			"updatedAppName",
+			"-b",
+			template.Spec.BrokerAddress,
+		}
+		schedulers := ensureNumberOfSchedulersToBe(2)
+		for _, pod := range schedulers.Items {
+			Expect(pod.Spec.Containers[0].Command).To(Equal(expectedCommand))
+		}
+	})
 })
