@@ -1,0 +1,23 @@
+digraph "celery-operator" {
+
+  subgraph cluster {
+    celery_controller;
+  }
+
+  subgraph cluster_0 {
+    broker_controller;
+  }
+  
+  subgraph cluster_1 {
+    worker_controller;
+  }
+  
+  subgraph cluster_2 {
+    scheduler_controller;
+  }
+
+  celery_controller -> broker_controller;
+  celery_controller -> worker_controller;
+  celery_controller -> scheduler_controller;
+
+}
