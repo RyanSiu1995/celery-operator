@@ -51,3 +51,7 @@ alpha version will be implemented.
   * [ ] Task Queuing
 
 **Please note that this has not been production ready yet.**
+
+## Tech Blog
+These are the tech blogs to record the development process.
+* [Initial Design](https://dev.to/ryansiu1995/dev-blog-celery-operator-part-1-initial-design-3hn2)
